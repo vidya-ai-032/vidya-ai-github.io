@@ -37,24 +37,13 @@ export default function TutorPage() {
   // Web Speech API setup
   useEffect(() => {
     if (typeof window === "undefined") return;
-    // Use a more specific type for SpeechRecognition
     const SpeechRecognition =
-      (
-        window as Window & {
-          webkitSpeechRecognition?: typeof window.SpeechRecognition;
-        }
-      ).SpeechRecognition ||
-      (
-        window as Window & {
-          webkitSpeechRecognition?: typeof window.SpeechRecognition;
-        }
-      ).webkitSpeechRecognition;
+      window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) return;
     recognitionRef.current = new SpeechRecognition();
     recognitionRef.current.continuous = false;
     recognitionRef.current.interimResults = true;
     recognitionRef.current.lang = "en-US";
-    // Use a custom event type for onresult
     recognitionRef.current.onresult = (event: {
       resultIndex: number;
       results: { isFinal: boolean; [key: number]: { transcript: string } }[];
@@ -72,7 +61,6 @@ export default function TutorPage() {
       setInput(finalTranscript);
       finalTranscriptRef.current = finalTranscript;
     };
-    // Use a custom event type for onerror
     recognitionRef.current.onerror = (event: { error: string }) => {
       setIsListening(false);
       setInterim("");
@@ -99,7 +87,7 @@ export default function TutorPage() {
     recognitionRef.current.onspeechend = () => {
       recognitionRef.current.stop();
     };
-  }, []);
+  }, [sendMessage]);
 
   useEffect(() => {
     setMessages([
