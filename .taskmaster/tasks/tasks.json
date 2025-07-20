@@ -1,0 +1,492 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Project Setup and Initial Configuration",
+        "description": "Set up the Next.js project structure, install dependencies, and configure the development environment for the AI-Powered Learning Platform.",
+        "status": "done",
+        "priority": "high",
+        "dependencies": [],
+        "tags": [
+          "setup",
+          "infrastructure"
+        ],
+        "estimatedHours": 4,
+        "createdAt": "2025-07-20T06:30:00.000Z",
+        "updatedAt": "2025-07-20T06:30:00.000Z"
+      },
+      {
+        "id": 2,
+        "title": "User Authentication System with Google OAuth",
+        "description": "Implement user registration and authentication using Google OAuth 2.0, including user profile creation and management.",
+        "status": "done",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "tags": [
+          "authentication",
+          "user-management"
+        ],
+        "estimatedHours": 8,
+        "createdAt": "2025-07-20T06:30:00.000Z",
+        "updatedAt": "2025-07-20T06:30:00.000Z"
+      },
+      {
+        "id": 3,
+        "title": "Google Gemini API Integration",
+        "description": "Integrate Google's Gemini model for AI-powered features including content processing, voice conversations, and quiz generation.",
+        "status": "done",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "tags": [
+          "ai-integration",
+          "gemini"
+        ],
+        "estimatedHours": 12,
+        "createdAt": "2025-07-20T06:30:00.000Z",
+        "updatedAt": "2025-07-20T06:30:00.000Z",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Set up Google Gemini API client",
+            "description": "Install and configure the Google AI SDK, set up API authentication, and create the base client for Gemini model interactions",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 3
+          },
+          {
+            "id": 2,
+            "title": "Create content processing service",
+            "description": "Implement AI service for processing and understanding uploaded study materials using Gemini's multimodal capabilities",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 3
+          },
+          {
+            "id": 3,
+            "title": "Implement quiz generation service",
+            "description": "Create AI service for generating different types of quizzes (MCQ, subjective, creative) using Gemini's text generation capabilities",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 3
+          },
+          {
+            "id": 4,
+            "title": "Create AI tutor conversation service",
+            "description": "Implement AI service for handling voice conversations with context-aware responses and learning progress tracking",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 3
+          },
+          {
+            "id": 5,
+            "title": "Implement quiz evaluation service",
+            "description": "Create AI service for evaluating student answers and providing detailed feedback with scoring",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 3
+          },
+          {
+            "id": 6,
+            "title": "Add API rate limiting and error handling",
+            "description": "Implement proper rate limiting, error handling, and retry mechanisms for reliable Gemini API interactions",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 3
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "File Upload System for Study Materials",
+        "description": "Create a file upload system that supports PDF, DOCX, TXT, JPG, and PNG formats with proper validation and storage.",
+        "status": "done",
+        "priority": "high",
+        "dependencies": [
+          2
+        ],
+        "tags": [
+          "file-upload",
+          "content-management"
+        ],
+        "estimatedHours": 6,
+        "createdAt": "2025-07-20T06:30:00.000Z",
+        "updatedAt": "2025-07-20T06:30:00.000Z"
+      },
+      {
+        "id": 5,
+        "title": "Content Processing and Topic Generation",
+        "description": "Implement AI-powered content processing to break down study materials into digestible 5-minute topics using Gemini.",
+        "status": "pending",
+        "priority": "high",
+        "dependencies": [
+          3,
+          4
+        ],
+        "tags": [
+          "ai-processing",
+          "content-analysis"
+        ],
+        "estimatedHours": 10,
+        "createdAt": "2025-07-20T06:30:00.000Z",
+        "updatedAt": "2025-07-20T06:30:00.000Z"
+      },
+      {
+        "id": 6,
+        "title": "Voice-First AI Tutor Interface",
+        "description": "Develop the voice conversation interface for the AI tutor, including speech-to-text, text-to-speech, and real-time conversation capabilities.",
+        "status": "done",
+        "priority": "high",
+        "dependencies": [
+          3
+        ],
+        "tags": [
+          "voice-interface",
+          "ai-tutor"
+        ],
+        "estimatedHours": 15,
+        "createdAt": "2025-07-20T06:30:00.000Z",
+        "updatedAt": "2025-07-20T06:30:00.000Z",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Set up Web Speech API integration",
+            "description": "Implement browser-based speech recognition and synthesis using Web Speech API for voice input and output",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 6
+          },
+          {
+            "id": 2,
+            "title": "Create voice conversation UI components",
+            "description": "Design and implement React components for voice conversation interface including microphone controls, conversation display, and voice feedback indicators",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 6
+          },
+          {
+            "id": 3,
+            "title": "Implement real-time speech-to-text conversion",
+            "description": "Set up continuous speech recognition with real-time transcription and error handling for voice input processing",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 6
+          },
+          {
+            "id": 4,
+            "title": "Implement text-to-speech synthesis",
+            "description": "Add AI response synthesis with natural voice output, including voice selection and speech rate controls",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 6
+          },
+          {
+            "id": 5,
+            "title": "Create conversation flow management",
+            "description": "Implement conversation state management, context tracking, and seamless transitions between voice input and AI responses",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 6
+          },
+          {
+            "id": 6,
+            "title": "Add voice activity detection",
+            "description": "Implement smart voice activity detection to automatically start/stop recording and handle background noise",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 6
+          },
+          {
+            "id": 7,
+            "title": "Implement error handling and fallbacks",
+            "description": "Add comprehensive error handling for speech recognition failures, network issues, and provide text input fallback options",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 6
+          },
+          {
+            "id": 8,
+            "title": "Add voice conversation testing and optimization",
+            "description": "Create comprehensive tests for voice features, optimize performance, and ensure cross-browser compatibility",
+            "details": "",
+            "status": "done",
+            "dependencies": [],
+            "parentTaskId": 6
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Quiz Generation System",
+        "description": "Create an AI-powered quiz generation system that can create MCQs, subjective questions, and creative thinking questions for any topic.",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          3,
+          5
+        ],
+        "tags": [
+          "quiz-generation",
+          "ai-assessment"
+        ],
+        "estimatedHours": 12,
+        "createdAt": "2025-07-20T06:30:00.000Z",
+        "updatedAt": "2025-07-20T06:30:00.000Z"
+      },
+      {
+        "id": 8,
+        "title": "Quiz Evaluation and Scoring System",
+        "description": "Implement AI-powered evaluation of quiz answers with automatic scoring and feedback generation.",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          7
+        ],
+        "tags": [
+          "quiz-evaluation",
+          "ai-scoring"
+        ],
+        "estimatedHours": 8,
+        "createdAt": "2025-07-20T06:30:00.000Z",
+        "updatedAt": "2025-07-20T06:30:00.000Z"
+      },
+      {
+        "id": 9,
+        "title": "Printable Questions Feature",
+        "description": "Add functionality to generate and print question lists for offline practice and group discussions.",
+        "status": "pending",
+        "priority": "low",
+        "dependencies": [
+          7
+        ],
+        "tags": [
+          "printing",
+          "offline-support"
+        ],
+        "estimatedHours": 4,
+        "createdAt": "2025-07-20T06:30:00.000Z",
+        "updatedAt": "2025-07-20T06:30:00.000Z"
+      },
+      {
+        "id": 10,
+        "title": "Student Progress Dashboard",
+        "description": "Create a comprehensive dashboard showing learning progress, completed topics, quiz scores, and time spent studying.",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          8
+        ],
+        "tags": [
+          "dashboard",
+          "progress-tracking"
+        ],
+        "estimatedHours": 10,
+        "createdAt": "2025-07-20T06:30:00.000Z",
+        "updatedAt": "2025-07-20T06:30:00.000Z"
+      },
+      {
+        "id": 11,
+        "title": "Anonymous Peer Comparison System",
+        "description": "Implement anonymous peer comparison features that show percentile rankings without revealing individual student data.",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          10
+        ],
+        "tags": [
+          "analytics",
+          "privacy"
+        ],
+        "estimatedHours": 8,
+        "createdAt": "2025-07-20T06:30:00.000Z",
+        "updatedAt": "2025-07-20T06:30:00.000Z"
+      },
+      {
+        "id": 12,
+        "title": "Parent Dashboard and Reporting",
+        "description": "Create a parent dashboard with insights into child's learning progress, strengths, and areas needing improvement.",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          10
+        ],
+        "tags": [
+          "parent-dashboard",
+          "reporting"
+        ],
+        "estimatedHours": 8,
+        "createdAt": "2025-07-20T06:30:00.000Z",
+        "updatedAt": "2025-07-20T06:30:00.000Z"
+      },
+      {
+        "id": 13,
+        "title": "Bring Your Own Key (BYOK) Integration",
+        "description": "Implement the option for users to link their personal Google Account to use their own Gemini API quota.",
+        "status": "pending",
+        "priority": "low",
+        "dependencies": [
+          2,
+          3
+        ],
+        "tags": [
+          "byok",
+          "api-management"
+        ],
+        "estimatedHours": 6,
+        "createdAt": "2025-07-20T06:30:00.000Z",
+        "updatedAt": "2025-07-20T06:30:00.000Z"
+      },
+      {
+        "id": 14,
+        "title": "Responsive UI/UX Design",
+        "description": "Design and implement a clean, intuitive, and fully responsive user interface that works on desktop, tablet, and mobile devices.",
+        "status": "pending",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "tags": [
+          "ui-ux",
+          "responsive-design"
+        ],
+        "estimatedHours": 12,
+        "createdAt": "2025-07-20T06:30:00.000Z",
+        "updatedAt": "2025-07-20T06:30:00.000Z",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Design system and component library",
+            "description": "Create a comprehensive design system with reusable components, color palette, typography, and spacing guidelines",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 14
+          },
+          {
+            "id": 2,
+            "title": "Create responsive layout components",
+            "description": "Build responsive layout components including navigation, sidebar, main content area, and footer that adapt to different screen sizes",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 14
+          },
+          {
+            "id": 3,
+            "title": "Implement mobile-first responsive design",
+            "description": "Ensure all components and pages work seamlessly on mobile devices with touch-friendly interactions and optimized layouts",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 14
+          },
+          {
+            "id": 4,
+            "title": "Add accessibility features",
+            "description": "Implement WCAG 2.1 Level AA compliance including keyboard navigation, screen reader support, and proper ARIA labels",
+            "details": "",
+            "status": "pending",
+            "dependencies": [],
+            "parentTaskId": 14
+          }
+        ]
+      },
+      {
+        "id": 15,
+        "title": "Security and Data Protection",
+        "description": "Implement data encryption, secure authentication, and ensure compliance with privacy standards for student data protection.",
+        "status": "pending",
+        "priority": "high",
+        "dependencies": [
+          2
+        ],
+        "tags": [
+          "security",
+          "privacy"
+        ],
+        "estimatedHours": 8,
+        "createdAt": "2025-07-20T06:30:00.000Z",
+        "updatedAt": "2025-07-20T06:30:00.000Z"
+      },
+      {
+        "id": 16,
+        "title": "Performance Optimization",
+        "description": "Optimize application performance to ensure page load times under 3 seconds and AI voice response streaming under 3 seconds.",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          6,
+          14
+        ],
+        "tags": [
+          "performance",
+          "optimization"
+        ],
+        "estimatedHours": 6,
+        "createdAt": "2025-07-20T06:30:00.000Z",
+        "updatedAt": "2025-07-20T06:30:00.000Z"
+      },
+      {
+        "id": 17,
+        "title": "Testing and Quality Assurance",
+        "description": "Implement comprehensive testing including unit tests, integration tests, and user acceptance testing for all features.",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          15
+        ],
+        "tags": [
+          "testing",
+          "qa"
+        ],
+        "estimatedHours": 10,
+        "createdAt": "2025-07-20T06:30:00.000Z",
+        "updatedAt": "2025-07-20T06:30:00.000Z"
+      },
+      {
+        "id": 18,
+        "title": "Deployment and Production Setup",
+        "description": "Set up production environment, configure CI/CD pipeline, and deploy the application with proper monitoring and logging.",
+        "status": "pending",
+        "priority": "medium",
+        "dependencies": [
+          17
+        ],
+        "tags": [
+          "deployment",
+          "production"
+        ],
+        "estimatedHours": 6,
+        "createdAt": "2025-07-20T06:30:00.000Z",
+        "updatedAt": "2025-07-20T06:30:00.000Z"
+      }
+    ],
+    "metadata": {
+      "version": "1.0.0",
+      "createdAt": "2025-07-20T06:30:00.000Z",
+      "updatedAt": "2025-07-20T06:30:00.000Z",
+      "totalTasks": 18,
+      "totalEstimatedHours": 147,
+      "created": "2025-07-20T06:46:33.557Z",
+      "description": "Tasks for master context",
+      "updated": "2025-07-20T08:54:22.320Z"
+    }
+  }
+}

@@ -1,0 +1,11 @@
+# Task ID: 2
+# Title: User Authentication System with Google OAuth
+# Status: pending
+# Dependencies: 1
+# Priority: high
+# Description: Implement user registration and authentication using Google OAuth 2.0, including user profile creation and management.
+# Details:
+
+
+# Test Strategy:
+

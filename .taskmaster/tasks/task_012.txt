@@ -1,0 +1,11 @@
+# Task ID: 12
+# Title: Parent Dashboard and Reporting
+# Status: pending
+# Dependencies: 10
+# Priority: medium
+# Description: Create a parent dashboard with insights into child's learning progress, strengths, and areas needing improvement.
+# Details:
+
+
+# Test Strategy:
+

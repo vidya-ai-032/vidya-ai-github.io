@@ -1,0 +1,11 @@
+# Task ID: 9
+# Title: Printable Questions Feature
+# Status: pending
+# Dependencies: 7
+# Priority: low
+# Description: Add functionality to generate and print question lists for offline practice and group discussions.
+# Details:
+
+
+# Test Strategy:
+

@@ -1,0 +1,11 @@
+# Task ID: 7
+# Title: Quiz Generation System
+# Status: pending
+# Dependencies: 3, 5
+# Priority: medium
+# Description: Create an AI-powered quiz generation system that can create MCQs, subjective questions, and creative thinking questions for any topic.
+# Details:
+
+
+# Test Strategy:
+
