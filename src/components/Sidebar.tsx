@@ -207,6 +207,7 @@ export default function Sidebar() {
                     const isActive =
                       pathname === link.href ||
                       (link.href !== "/dashboard" &&
+                        pathname &&
                         pathname.startsWith(link.href));
                     // Dynamically set badge for Quiz link
                     const showBadge = link.href === "/quiz" && quizCount > 0;

@@ -376,9 +376,9 @@ export default function UploadPage() {
                   ) : (
                     <SubtopicCard topic={t} />
                   )}
-                  <div className="mt-auto flex gap-2 flex-wrap">
+                  <div className="mt-auto flex flex-row gap-2">
                     <button
-                      className="bg-gradient-to-r from-green-600 to-blue-600 text-white px-3 py-1 rounded font-semibold hover:shadow-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 text-sm"
+                      className="flex-1 min-w-0 px-2 py-1 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded font-semibold hover:shadow-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 text-sm"
                       aria-label={`Generate quiz for ${t.label}`}
                       tabIndex={0}
                       onClick={async () => {
@@ -428,7 +428,7 @@ export default function UploadPage() {
                       Generate Quiz
                     </button>
                     <button
-                      className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 py-1 rounded font-semibold hover:shadow-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 text-sm"
+                      className="flex-1 min-w-0 px-2 py-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded font-semibold hover:shadow-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 text-sm"
                       aria-label={`Generate Q&A for ${t.label}`}
                       tabIndex={0}
                       onClick={async () => {
@@ -478,7 +478,7 @@ export default function UploadPage() {
                       Generate Q&A
                     </button>
                     <button
-                      className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-3 py-1 rounded font-semibold hover:shadow-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 text-sm"
+                      className="flex-1 min-w-0 px-2 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded font-semibold hover:shadow-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 text-sm"
                       aria-label={`Generate summary for ${t.label}`}
                       tabIndex={0}
                       onClick={async () => {
