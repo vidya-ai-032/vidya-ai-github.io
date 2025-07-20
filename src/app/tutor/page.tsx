@@ -28,17 +28,9 @@ export default function TutorPage() {
   // Web Speech API setup
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const SpeechRecognition =
-      (
-        window as typeof window & {
-          webkitSpeechRecognition?: typeof SpeechRecognition;
-        }
-      ).SpeechRecognition ||
-      (
-        window as typeof window & {
-          webkitSpeechRecognition?: typeof SpeechRecognition;
-        }
-      ).webkitSpeechRecognition;
+    const SpeechRecognition: any =
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) return;
     recognitionRef.current = new SpeechRecognition();
     recognitionRef.current.continuous = false;
