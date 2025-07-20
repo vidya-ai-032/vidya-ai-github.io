@@ -11,6 +11,14 @@ interface Message {
 // @ts-expect-error: SpeechRecognition is not globally typed in all environments
 type SpeechRecognition = typeof window.SpeechRecognition;
 
+// Add this at the top of the file for Netlify/Next.js compatibility
+declare global {
+  interface Window {
+    SpeechRecognition: typeof window.SpeechRecognition | undefined;
+    webkitSpeechRecognition: typeof window.SpeechRecognition | undefined;
+  }
+}
+
 export default function TutorPage() {
   const [isListening, setIsListening] = useState(false);
   const [input, setInput] = useState("");
@@ -22,9 +30,7 @@ export default function TutorPage() {
   const [micError, setMicError] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   // Use a more specific type for recognitionRef
-  const recognitionRef = useRef<InstanceType<
-    typeof window.SpeechRecognition
-  > | null>(null);
+  const recognitionRef = useRef<any>(null);
   const inputRef = useRef("");
   const finalTranscriptRef = useRef("");
 
