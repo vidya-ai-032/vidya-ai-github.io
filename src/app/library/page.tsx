@@ -106,80 +106,83 @@ export default function LibraryPage() {
                               Uploaded: {new Date(doc.date).toLocaleString()}
                             </div>
                           </div>
-                          <button
-                            className="bg-gradient-to-r from-green-600 to-blue-600 text-white px-3 py-1 rounded font-semibold hover:shadow-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 text-xs cursor-pointer mt-2 sm:mt-0 sm:ml-2"
-                            onClick={async () => {
-                              if (!session?.user?.email) return;
-                              console.log(
-                                "[GEMINI] Sending to Gemini (quiz):",
-                                doc.rawContent?.slice(0, 200),
-                                doc.subject
-                              );
-                              await fetch("/api/gemini/generate-quiz", {
-                                method: "POST",
-                                headers: {
-                                  "Content-Type": "application/json",
-                                },
-                                body: JSON.stringify({
-                                  content: doc.rawContent,
-                                  subject: doc.subject,
-                                  quizType: "mcq",
-                                }),
-                              });
-                              // ...handle response...
-                            }}
-                          >
-                            Generate Quiz
-                          </button>
-                          <button
-                            className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 py-1 rounded font-semibold hover:shadow-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 text-xs cursor-pointer mt-2 sm:mt-0 sm:ml-2"
-                            onClick={async () => {
-                              if (!session?.user?.email) return;
-                              console.log(
-                                "[GEMINI] Sending to Gemini (Q&A):",
-                                doc.rawContent?.slice(0, 200),
-                                doc.subject
-                              );
-                              await fetch("/api/gemini/generate-quiz", {
-                                method: "POST",
-                                headers: {
-                                  "Content-Type": "application/json",
-                                },
-                                body: JSON.stringify({
-                                  content: doc.rawContent,
-                                  subject: doc.subject,
-                                  quizType: "subjective",
-                                }),
-                              });
-                              // ...handle response...
-                            }}
-                          >
-                            Generate Q&A
-                          </button>
-                          <button
-                            className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-3 py-1 rounded font-semibold hover:shadow-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 text-xs cursor-pointer mt-2 sm:mt-0 sm:ml-2"
-                            onClick={async () => {
-                              if (!session?.user?.email) return;
-                              console.log(
-                                "[GEMINI] Sending to Gemini (summary):",
-                                doc.rawContent?.slice(0, 200),
-                                doc.subject
-                              );
-                              await fetch("/api/gemini/process-content", {
-                                method: "POST",
-                                headers: {
-                                  "Content-Type": "application/json",
-                                },
-                                body: JSON.stringify({
-                                  content: doc.rawContent,
-                                  subject: doc.subject,
-                                }),
-                              });
-                              // ...handle response...
-                            }}
-                          >
-                            Generate Summary
-                          </button>
+                          {/* Action Buttons Group */}
+                          <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                            <button
+                              className="flex-1 bg-gradient-to-r from-green-600 to-blue-600 text-white px-3 py-1 rounded font-semibold hover:shadow-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 text-xs cursor-pointer"
+                              onClick={async () => {
+                                if (!session?.user?.email) return;
+                                console.log(
+                                  "[GEMINI] Sending to Gemini (quiz):",
+                                  doc.rawContent?.slice(0, 200),
+                                  doc.subject
+                                );
+                                await fetch("/api/gemini/generate-quiz", {
+                                  method: "POST",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                  },
+                                  body: JSON.stringify({
+                                    content: doc.rawContent,
+                                    subject: doc.subject,
+                                    quizType: "mcq",
+                                  }),
+                                });
+                                // ...handle response...
+                              }}
+                            >
+                              Generate Quiz
+                            </button>
+                            <button
+                              className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 py-1 rounded font-semibold hover:shadow-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 text-xs cursor-pointer"
+                              onClick={async () => {
+                                if (!session?.user?.email) return;
+                                console.log(
+                                  "[GEMINI] Sending to Gemini (Q&A):",
+                                  doc.rawContent?.slice(0, 200),
+                                  doc.subject
+                                );
+                                await fetch("/api/gemini/generate-quiz", {
+                                  method: "POST",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                  },
+                                  body: JSON.stringify({
+                                    content: doc.rawContent,
+                                    subject: doc.subject,
+                                    quizType: "subjective",
+                                  }),
+                                });
+                                // ...handle response...
+                              }}
+                            >
+                              Generate Q&A
+                            </button>
+                            <button
+                              className="flex-1 bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-3 py-1 rounded font-semibold hover:shadow-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 text-xs cursor-pointer"
+                              onClick={async () => {
+                                if (!session?.user?.email) return;
+                                console.log(
+                                  "[GEMINI] Sending to Gemini (summary):",
+                                  doc.rawContent?.slice(0, 200),
+                                  doc.subject
+                                );
+                                await fetch("/api/gemini/process-content", {
+                                  method: "POST",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                  },
+                                  body: JSON.stringify({
+                                    content: doc.rawContent,
+                                    subject: doc.subject,
+                                  }),
+                                });
+                                // ...handle response...
+                              }}
+                            >
+                              Generate Summary
+                            </button>
+                          </div>
                         </li>
                       ))}
                     </ul>
