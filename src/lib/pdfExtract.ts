@@ -1,5 +1,9 @@
 import * as pdfjsLib from "pdfjs-dist";
 
+// Define a minimal TextItem type if not available from pdfjs-dist
+// (for strict TypeScript, you may want to install @types/pdfjs-dist)
+type TextItem = { str: string };
+
 // Set the workerSrc to the CDN version for compatibility with Netlify/Next.js
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
 
@@ -10,9 +14,8 @@ export async function extractPdfText(file: File): Promise<string> {
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const content = await page.getTextContent();
-    // Fallback for types if needed
-    const items = content.items as any[]; // pdfjsLib.TextItem[] may not be available
-    text += items.map((item: any) => item.str).join(" ") + "\n";
+    const items = content.items as TextItem[];
+    text += items.map((item) => item.str).join(" ") + "\n";
   }
   return text;
 }

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 // Remove: import { extractPdfText } from "@/lib/pdfExtract";
+import { segmentTextToSubtopics, Subtopic } from "@/lib/segmentText";
 
 const ACCEPTED_TYPES = [
   "application/pdf",
@@ -14,12 +15,7 @@ const ACCEPTED_TYPES = [
   "image/png",
 ];
 
-interface Subtopic {
-  title: string;
-  summary: string;
-  keyPoints: string[];
-  subtopics?: Subtopic[];
-}
+// Removed local Subtopic interface declaration
 
 interface Topic {
   label: string;
@@ -46,12 +42,17 @@ interface LibraryDoc {
 function SubtopicCard({
   topic,
   onDelete,
+  subject,
+  rawContent,
 }: {
   topic: Subtopic;
   onDelete?: () => void;
+  subject?: string;
+  rawContent?: string;
 }) {
+  const { data: session } = useSession();
   return (
-    <div className="relative bg-blue-50 border border-blue-100 rounded-lg p-3 mb-3 pt-8">
+    <div className="relative bg-blue-50 border border-blue-100 rounded-lg p-4 mb-0 flex flex-col flex-1 min-w-0 min-h-32 max-h-80 w-full overflow-y-auto shadow-sm transition-all duration-200 sm:p-5 break-words">
       {onDelete && (
         <button
           className="absolute top-2 right-2 bg-red-500 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-semibold"
@@ -60,19 +61,152 @@ function SubtopicCard({
           Delete
         </button>
       )}
-      <div className="font-semibold text-blue-800 mb-1">{topic.title}</div>
-      <div className="text-gray-700 text-sm mb-1">{topic.summary}</div>
+      <div className="font-semibold text-blue-800 mb-1 text-base sm:text-lg break-words">
+        {topic.title}
+      </div>
+      <div className="text-gray-700 text-sm sm:text-base mb-1 break-words">
+        {topic.summary}
+      </div>
       {topic.keyPoints && topic.keyPoints.length > 0 && (
-        <ul className="list-disc pl-5 text-gray-600 text-xs mb-2">
+        <ul className="list-disc pl-5 text-gray-600 text-xs sm:text-sm mb-2 space-y-1">
           {topic.keyPoints.map((kp, i) => (
-            <li key={i}>{kp}</li>
+            <li key={i} className="break-words">
+              {kp}
+            </li>
           ))}
         </ul>
       )}
+      {/* Action buttons for each subtopic */}
+      <div className="mt-auto flex flex-row gap-2">
+        <button
+          className="flex-1 min-w-0 px-2 py-1 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded font-semibold hover:shadow-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 text-sm"
+          aria-label={`Generate quiz for ${topic.title}`}
+          tabIndex={0}
+          onClick={async () => {
+            if (!session?.user?.email) return;
+            const content =
+              topic.summary + "\n" + (topic.keyPoints || []).join(" ");
+            const res = await fetch("/api/gemini/generate-quiz", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                content: content,
+                subject: subject || topic.title,
+                quizType: "mcq",
+              }),
+            });
+            if (res.status === 429) {
+              alert(
+                "You have exceeded your Gemini API quota. Please use a different API key in settings or wait for your quota to reset."
+              );
+              return;
+            }
+            const data = await res.json();
+            if (res.ok && data.quiz) {
+              const key = `vidyaai_quiz_history_${session.user.email}`;
+              const history = JSON.parse(localStorage.getItem(key) || "[]");
+              history.unshift({
+                ...data.quiz,
+                date: new Date().toISOString(),
+                topicLabel: topic.title,
+                userEmail: session.user.email,
+              });
+              localStorage.setItem(key, JSON.stringify(history.slice(0, 10)));
+              alert("Quiz generated and saved!");
+            }
+          }}
+        >
+          Generate Quiz
+        </button>
+        <button
+          className="flex-1 min-w-0 px-2 py-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded font-semibold hover:shadow-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 text-sm"
+          aria-label={`Generate Q&A for ${topic.title}`}
+          tabIndex={0}
+          onClick={async () => {
+            if (!session?.user?.email) return;
+            const content =
+              topic.summary + "\n" + (topic.keyPoints || []).join(" ");
+            const res = await fetch("/api/gemini/generate-quiz", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                content: content,
+                subject: subject || topic.title,
+                quizType: "subjective",
+              }),
+            });
+            if (res.status === 429) {
+              alert(
+                "You have exceeded your Gemini API quota. Please use a different API key in settings or wait for your quota to reset."
+              );
+              return;
+            }
+            const data = await res.json();
+            if (res.ok && data.quiz) {
+              const key = `vidyaai_qa_history_${session.user.email}`;
+              const history = JSON.parse(localStorage.getItem(key) || "[]");
+              history.unshift({
+                ...data.quiz,
+                date: new Date().toISOString(),
+                topicLabel: topic.title,
+                userEmail: session.user.email,
+              });
+              localStorage.setItem(key, JSON.stringify(history.slice(0, 10)));
+              alert("Q&A generated and saved!");
+            }
+          }}
+        >
+          Generate Q&A
+        </button>
+        <button
+          className="flex-1 min-w-0 px-2 py-1 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded font-semibold hover:shadow-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 text-sm"
+          aria-label={`Generate summary for ${topic.title}`}
+          tabIndex={0}
+          onClick={async () => {
+            if (!session?.user?.email) return;
+            const content =
+              topic.summary + "\n" + (topic.keyPoints || []).join(" ");
+            const res = await fetch("/api/gemini/process-content", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                content: content,
+                subject: subject || topic.title,
+              }),
+            });
+            if (res.status === 429) {
+              alert(
+                "You have exceeded your Gemini API quota. Please use a different API key in settings or wait for your quota to reset."
+              );
+              return;
+            }
+            const data = await res.json();
+            if (res.ok && data.topics) {
+              const key = `vidyaai_summary_history_${session.user.email}`;
+              const history = JSON.parse(localStorage.getItem(key) || "[]");
+              history.unshift({
+                summary: data.topics,
+                date: new Date().toISOString(),
+                topicLabel: topic.title,
+                userEmail: session.user.email,
+              });
+              localStorage.setItem(key, JSON.stringify(history.slice(0, 10)));
+              alert("Summary generated and saved!");
+            }
+          }}
+        >
+          Summary
+        </button>
+      </div>
       {topic.subtopics && topic.subtopics.length > 0 && (
-        <div className="ml-4 border-l-2 border-blue-200 pl-3 mt-2">
+        <div className="ml-2 sm:ml-4 border-l-2 border-blue-200 pl-2 sm:pl-3 mt-2 space-y-4">
           {topic.subtopics.map((sub, i) => (
-            <SubtopicCard key={i} topic={sub} />
+            <SubtopicCard
+              key={i}
+              topic={sub}
+              subject={subject}
+              rawContent={rawContent}
+            />
           ))}
         </div>
       )}
@@ -207,12 +341,9 @@ export default function UploadPage() {
           body: JSON.stringify({ content: fileText, subject }),
         });
         const topicData = await topicRes.json();
+        let newTopics;
         if (topicRes.ok && topicData.topics) {
-          // Save topics to localStorage
-          const prev = JSON.parse(
-            localStorage.getItem("vidyaai_uploaded_topics") || "[]"
-          );
-          const newTopics = topicData.topics.map(
+          newTopics = topicData.topics.map(
             (t: {
               title: string;
               summary: string;
@@ -229,12 +360,28 @@ export default function UploadPage() {
               subtopics: t.subtopics,
             })
           );
-          localStorage.setItem(
-            "vidyaai_uploaded_topics",
-            JSON.stringify([...prev, ...newTopics])
-          );
-          setExtractedTopics(newTopics);
+        } else {
+          // Fallback: rule-based segmentation (now always returns a top-level topic)
+          const fallbackTopics = segmentTextToSubtopics(fileText);
+          newTopics = fallbackTopics.map((ft) => ({
+            label: `${subject} (Rule-based)`,
+            title: ft.title,
+            content: ft.summary + "\n" + (ft.keyPoints || []).join(" "),
+            summary: ft.summary,
+            keyPoints: ft.keyPoints,
+            subject,
+            rawContent: fileText,
+            subtopics: ft.subtopics,
+          }));
         }
+        const prev = JSON.parse(
+          localStorage.getItem("vidyaai_uploaded_topics") || "[]"
+        );
+        localStorage.setItem(
+          "vidyaai_uploaded_topics",
+          JSON.stringify([...prev, ...newTopics])
+        );
+        setExtractedTopics(newTopics);
       }
       alert("File uploaded and topics extracted successfully!");
       window.dispatchEvent(new Event("library-updated"));
@@ -261,7 +408,7 @@ export default function UploadPage() {
       role="main"
       aria-label="Upload page"
     >
-      <div className="max-w-lg w-full bg-white rounded-2xl shadow-lg p-4 sm:p-8">
+      <div className="w-full max-w-5xl bg-white rounded-2xl shadow-lg p-4 sm:p-8 mx-auto">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3 sm:mb-4 text-center">
           Upload Study Material
         </h1>
@@ -335,7 +482,10 @@ export default function UploadPage() {
               <div className="font-bold text-lg">Extracted Subtopics:</div>
               <PrintButton contentId="subtopics-section" />
             </div>
-            <div id="subtopics-section" className="grid gap-4 sm:grid-cols-2">
+            <div
+              id="subtopics-section"
+              className="grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(250px,1fr))]"
+            >
               {extractedTopics.map((t, i) => (
                 <div
                   key={i}
@@ -370,11 +520,20 @@ export default function UploadPage() {
                   {Array.isArray(t.subtopics) && t.subtopics.length > 0 ? (
                     <div className="space-y-4">
                       {t.subtopics.map((sub: Subtopic, j: number) => (
-                        <SubtopicCard key={j} topic={sub} />
+                        <SubtopicCard
+                          key={j}
+                          topic={sub}
+                          subject={t.subject}
+                          rawContent={t.rawContent}
+                        />
                       ))}
                     </div>
                   ) : (
-                    <SubtopicCard topic={t} />
+                    <SubtopicCard
+                      topic={t}
+                      subject={t.subject}
+                      rawContent={t.rawContent}
+                    />
                   )}
                   <div className="mt-auto flex flex-row gap-2">
                     <button
