@@ -8,7 +8,7 @@ interface Message {
 }
 
 // Add this at the top of the file for TypeScript support
-type SpeechRecognition = typeof window.SpeechRecognition;
+// type SpeechRecognition = typeof window.SpeechRecognition;
 
 // Add this at the top of the file for Netlify/Next.js compatibility
 declare global {
