@@ -36,7 +36,7 @@ export default function TutorPage() {
     recognitionRef.current.continuous = false;
     recognitionRef.current.interimResults = true;
     recognitionRef.current.lang = "en-US";
-    recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
+    recognitionRef.current.onresult = (event: any) => {
       let interimTranscript = "";
       let finalTranscript = "";
       for (let i = event.resultIndex; i < event.results.length; ++i) {
@@ -50,7 +50,7 @@ export default function TutorPage() {
       setInput(finalTranscript);
       finalTranscriptRef.current = finalTranscript;
     };
-    recognitionRef.current.onerror = (event: SpeechRecognitionErrorEvent) => {
+    recognitionRef.current.onerror = (event: any) => {
       setIsListening(false);
       setInterim("");
       finalTranscriptRef.current = "";
