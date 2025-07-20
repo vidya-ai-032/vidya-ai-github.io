@@ -8,7 +8,6 @@ interface Message {
 }
 
 // Add this at the top of the file for TypeScript support
-// @ts-expect-error: SpeechRecognition is not globally typed in all environments
 type SpeechRecognition = typeof window.SpeechRecognition;
 
 // Add this at the top of the file for Netlify/Next.js compatibility
