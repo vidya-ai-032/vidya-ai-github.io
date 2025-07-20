@@ -23,6 +23,7 @@ interface Subtopic {
 
 interface Topic {
   label: string;
+  title: string;
   content: string;
   summary: string;
   keyPoints: string[];
@@ -219,6 +220,7 @@ export default function UploadPage() {
               subtopics?: Subtopic[];
             }) => ({
               label: `${t.title} (${subject})`,
+              title: t.title,
               content: t.summary + "\n" + t.keyPoints.join(" "),
               summary: t.summary,
               keyPoints: t.keyPoints,
