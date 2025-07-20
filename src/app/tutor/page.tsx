@@ -33,6 +33,24 @@ export default function TutorPage() {
   const inputRef = useRef("");
   const finalTranscriptRef = useRef("");
 
+  const speak = useCallback((text: string) => {
+    setTtsError(null);
+    if (typeof window === "undefined" || !window.speechSynthesis) {
+      setTtsError("Text-to-speech is not supported in this browser.");
+      return;
+    }
+    try {
+      window.speechSynthesis.cancel(); // Stop any ongoing speech
+      const utter = new window.SpeechSynthesisUtterance(text);
+      utter.lang = "en-US";
+      utter.rate = 1;
+      utter.onerror = () => setTtsError("Failed to play audio.");
+      window.speechSynthesis.speak(utter);
+    } catch {
+      setTtsError("Failed to play audio.");
+    }
+  }, []);
+
   const sendMessage = useCallback(
     async (msg: string) => {
       if (!msg.trim() || loading) return;
@@ -150,24 +168,6 @@ export default function TutorPage() {
   useEffect(() => {
     inputRef.current = input;
   }, [input]);
-
-  const speak = useCallback((text: string) => {
-    setTtsError(null);
-    if (typeof window === "undefined" || !window.speechSynthesis) {
-      setTtsError("Text-to-speech is not supported in this browser.");
-      return;
-    }
-    try {
-      window.speechSynthesis.cancel(); // Stop any ongoing speech
-      const utter = new window.SpeechSynthesisUtterance(text);
-      utter.lang = "en-US";
-      utter.rate = 1;
-      utter.onerror = () => setTtsError("Failed to play audio.");
-      window.speechSynthesis.speak(utter);
-    } catch {
-      setTtsError("Failed to play audio.");
-    }
-  }, []);
 
   // Clean up speech recognition and synthesis on unmount
   useEffect(() => {
