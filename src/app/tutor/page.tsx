@@ -212,8 +212,7 @@ export default function TutorPage() {
   };
 
   const stopListening = () => {
-    if (!recognitionRef.current) return;
-    recognitionRef.current.stop();
+    recognitionRef.current?.stop?.();
     setIsListening(false);
     setInterim("");
   };
