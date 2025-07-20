@@ -33,6 +33,55 @@ export default function TutorPage() {
   const inputRef = useRef("");
   const finalTranscriptRef = useRef("");
 
+  const sendMessage = useCallback(
+    async (msg: string) => {
+      if (!msg.trim() || loading) return;
+      setMessages((prev) => [...prev, { role: "user", content: msg }]);
+      setInput("");
+      setInterim("");
+      setApiError(null);
+      setLoading(true);
+      try {
+        const res = await fetch("/api/gemini/tutor", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: msg,
+            conversationHistory: messages,
+          }),
+        });
+        const data = await res.json();
+        if (res.status !== 200) {
+          setApiError(
+            data.error || "AI service error. Please try again later."
+          );
+        }
+        if (data?.response?.response) {
+          setMessages((prev) => [
+            ...prev,
+            { role: "assistant", content: data.response.response },
+          ]);
+          setSuggestions(data.response.suggestions || []);
+          speak(data.response.response);
+        }
+      } catch {
+        setApiError(
+          "Network error. Please check your connection and try again."
+        );
+        setMessages((prev) => [
+          ...prev,
+          {
+            role: "assistant",
+            content: "Sorry, I couldn&apos;t process that. Please try again.",
+          },
+        ]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [loading, messages, speak]
+  );
+
   // Web Speech API setup
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -119,55 +168,6 @@ export default function TutorPage() {
       setTtsError("Failed to play audio.");
     }
   }, []);
-
-  const sendMessage = useCallback(
-    async (msg: string) => {
-      if (!msg.trim() || loading) return;
-      setMessages((prev) => [...prev, { role: "user", content: msg }]);
-      setInput("");
-      setInterim("");
-      setApiError(null);
-      setLoading(true);
-      try {
-        const res = await fetch("/api/gemini/tutor", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            message: msg,
-            conversationHistory: messages,
-          }),
-        });
-        const data = await res.json();
-        if (res.status !== 200) {
-          setApiError(
-            data.error || "AI service error. Please try again later."
-          );
-        }
-        if (data?.response?.response) {
-          setMessages((prev) => [
-            ...prev,
-            { role: "assistant", content: data.response.response },
-          ]);
-          setSuggestions(data.response.suggestions || []);
-          speak(data.response.response);
-        }
-      } catch {
-        setApiError(
-          "Network error. Please check your connection and try again."
-        );
-        setMessages((prev) => [
-          ...prev,
-          {
-            role: "assistant",
-            content: "Sorry, I couldn&apos;t process that. Please try again.",
-          },
-        ]);
-      } finally {
-        setLoading(false);
-      }
-    },
-    [loading, messages, speak]
-  );
 
   // Clean up speech recognition and synthesis on unmount
   useEffect(() => {
