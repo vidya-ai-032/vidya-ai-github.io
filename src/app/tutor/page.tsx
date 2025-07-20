@@ -205,11 +205,10 @@ export default function TutorPage() {
 
   // Prevent double-sending by disabling sendMessage if already loading
   const startListening = () => {
-    if (!recognitionRef.current) return;
     setInput("");
     setInterim("");
     setIsListening(true);
-    recognitionRef.current.start();
+    recognitionRef.current?.start?.();
   };
 
   const stopListening = () => {
