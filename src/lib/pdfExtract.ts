@@ -1,7 +1,7 @@
-import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf";
-import workerSrc from "pdfjs-dist/legacy/build/pdf.worker.js";
+import * as pdfjsLib from "pdfjs-dist";
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc;
+// Set the workerSrc to the CDN version for compatibility with Netlify/Next.js
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
 
 export async function extractPdfText(file: File): Promise<string> {
   const arrayBuffer = await file.arrayBuffer();
@@ -10,8 +10,9 @@ export async function extractPdfText(file: File): Promise<string> {
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
     const content = await page.getTextContent();
-    text +=
-      content.items.map((item: pdfjsLib.TextItem) => item.str).join(" ") + "\n";
+    // Fallback for types if needed
+    const items = content.items as any[]; // pdfjsLib.TextItem[] may not be available
+    text += items.map((item: any) => item.str).join(" ") + "\n";
   }
   return text;
 }
