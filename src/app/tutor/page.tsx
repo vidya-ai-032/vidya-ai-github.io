@@ -127,11 +127,11 @@ export default function TutorPage() {
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) return;
-    recognitionRef.current = new SpeechRecognition();
-    recognitionRef.current.continuous = false;
-    recognitionRef.current.interimResults = true;
-    recognitionRef.current.lang = "en-US";
-    recognitionRef.current.onresult = (event: {
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+    recognition.onresult = (event: {
       resultIndex: number;
       results: { isFinal: boolean; [key: number]: { transcript: string } }[];
     }) => {
@@ -148,7 +148,7 @@ export default function TutorPage() {
       setInput(finalTranscript);
       finalTranscriptRef.current = finalTranscript;
     };
-    recognitionRef.current.onerror = (event: { error: string }) => {
+    recognition.onerror = (event: { error: string }) => {
       setIsListening(false);
       setInterim("");
       finalTranscriptRef.current = "";
@@ -162,7 +162,7 @@ export default function TutorPage() {
         setMicError("Speech recognition error: " + event.error);
       }
     };
-    recognitionRef.current.onend = () => {
+    recognition.onend = () => {
       setIsListening(false);
       setInterim("");
       // Auto-send message if final transcript is not empty
@@ -171,9 +171,10 @@ export default function TutorPage() {
         finalTranscriptRef.current = "";
       }
     };
-    recognitionRef.current.onspeechend = () => {
-      recognitionRef.current.stop();
+    recognition.onspeechend = () => {
+      recognition.stop();
     };
+    recognitionRef.current = recognition;
   }, [sendMessage]);
 
   useEffect(() => {
