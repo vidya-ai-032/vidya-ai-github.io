@@ -21,22 +21,38 @@ export default function TutorPage() {
   const [ttsError, setTtsError] = useState<string | null>(null);
   const [micError, setMicError] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  // Use a more specific type for recognitionRef
+  const recognitionRef = useRef<InstanceType<
+    typeof window.SpeechRecognition
+  > | null>(null);
   const inputRef = useRef("");
   const finalTranscriptRef = useRef("");
 
   // Web Speech API setup
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const SpeechRecognition: any =
-      (window as any).SpeechRecognition ||
-      (window as any).webkitSpeechRecognition;
+    // Use a more specific type for SpeechRecognition
+    const SpeechRecognition =
+      (
+        window as Window & {
+          webkitSpeechRecognition?: typeof window.SpeechRecognition;
+        }
+      ).SpeechRecognition ||
+      (
+        window as Window & {
+          webkitSpeechRecognition?: typeof window.SpeechRecognition;
+        }
+      ).webkitSpeechRecognition;
     if (!SpeechRecognition) return;
     recognitionRef.current = new SpeechRecognition();
     recognitionRef.current.continuous = false;
     recognitionRef.current.interimResults = true;
     recognitionRef.current.lang = "en-US";
-    recognitionRef.current.onresult = (event: any) => {
+    // Use a custom event type for onresult
+    recognitionRef.current.onresult = (event: {
+      resultIndex: number;
+      results: { isFinal: boolean; [key: number]: { transcript: string } }[];
+    }) => {
       let interimTranscript = "";
       let finalTranscript = "";
       for (let i = event.resultIndex; i < event.results.length; ++i) {
@@ -50,7 +66,8 @@ export default function TutorPage() {
       setInput(finalTranscript);
       finalTranscriptRef.current = finalTranscript;
     };
-    recognitionRef.current.onerror = (event: any) => {
+    // Use a custom event type for onerror
+    recognitionRef.current.onerror = (event: { error: string }) => {
       setIsListening(false);
       setInterim("");
       finalTranscriptRef.current = "";
