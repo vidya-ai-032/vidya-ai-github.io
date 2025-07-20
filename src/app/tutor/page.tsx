@@ -7,6 +7,27 @@ interface Message {
   content: string;
 }
 
+// Add this type for cross-platform speech recognition instance
+// This covers the properties and methods you use
+// and avoids the use of 'any'.
+type RecognitionInstance = {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onresult:
+    | ((event: {
+        resultIndex: number;
+        results: { isFinal: boolean; [key: number]: { transcript: string } }[];
+      }) => void)
+    | null;
+  onerror: ((event: { error: string }) => void) | null;
+  onend: (() => void) | null;
+  onspeechend: (() => void) | null;
+  start?: () => void;
+  stop?: () => void;
+  abort?: () => void;
+};
+
 // Add this at the top of the file for TypeScript support
 // type SpeechRecognition = typeof window.SpeechRecognition;
 
@@ -29,7 +50,7 @@ export default function TutorPage() {
   const [micError, setMicError] = useState<string | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   // Use a more specific type for recognitionRef
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<RecognitionInstance | null>(null);
   const inputRef = useRef("");
   const finalTranscriptRef = useRef("");
 
