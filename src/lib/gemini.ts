@@ -127,6 +127,9 @@ function safeParseGeminiJSON(raw) {
 }
 
 export class GeminiService {
+  static getModel() {
+    return getGeminiModel();
+  }
   // Content Processing Service
   static async processContent(
     content: string,

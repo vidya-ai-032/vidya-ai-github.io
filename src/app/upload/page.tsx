@@ -229,6 +229,15 @@ function SubtopicCard({
   setTutorModal,
   expandedCardId,
   setExpandedCardId,
+  quizAnswers,
+  quizSubmitted,
+  quizScore,
+  handleQuizAnswer,
+  handleQuizSubmit,
+  qaContent,
+  qaExpanded,
+  setQaContent,
+  setQaExpanded,
 }: {
   topic: Subtopic;
   onDelete?: () => void;
@@ -237,6 +246,15 @@ function SubtopicCard({
   setTutorModal: React.Dispatch<React.SetStateAction<any>>;
   expandedCardId?: string | null;
   setExpandedCardId?: (id: string | null) => void;
+  quizAnswers: Record<string, Record<number, string>>;
+  quizSubmitted: Record<string, boolean>;
+  quizScore: Record<string, number>;
+  handleQuizAnswer: (subtopic: string, idx: number, value: string) => void;
+  handleQuizSubmit: (subtopic: string, quiz: any) => void;
+  qaContent: Record<string, any>;
+  qaExpanded: Record<string, boolean>;
+  setQaContent: React.Dispatch<React.SetStateAction<Record<string, any>>>;
+  setQaExpanded: React.Dispatch<React.SetStateAction<Record<string, boolean>>>;
 }) {
   const { data: session } = useSession();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -246,6 +264,11 @@ function SubtopicCard({
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const utterRef = useRef<SpeechSynthesisUtterance | null>(null);
+  const [quiz, setQuiz] = useState<any | null>(null);
+  const [quizExpanded, setQuizExpanded] = useState(false);
+  const [qa, setQa] = useState<any | null>(null);
+  const [qaLoading, setQaLoading] = useState(false);
+  const subtopicKey = topic.title;
 
   // Only allow one expanded card at a time
   useEffect(() => {
@@ -311,6 +334,76 @@ function SubtopicCard({
     window.speechSynthesis.cancel();
     setIsSpeaking(false);
     setIsPaused(false);
+  };
+
+  // Add a function to generate answers for all questions in the Q&A card
+  const handleGenerateAnswers = async () => {
+    if (!session?.user?.email) return;
+    if (!(qa || qaContent[subtopicKey])) return;
+    setQaLoading(true);
+    const currentQa = qa || qaContent[subtopicKey];
+    const questionsWithAnswers = await Promise.all(
+      currentQa.questions.map(async (q: any) => {
+        if (q.answer && q.answer !== "" && q.answer !== "(No answer generated)")
+          return q;
+        try {
+          const ansRes = await fetch("/api/gemini/generate-answer", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ question: q.question }),
+          });
+          const ansData = await ansRes.json();
+          return { ...q, answer: ansData.answer || "(No answer generated)" };
+        } catch {
+          return { ...q, answer: "(No answer generated)" };
+        }
+      })
+    );
+    const qaWithAnswers = { ...currentQa, questions: questionsWithAnswers };
+    setQa(qaWithAnswers);
+    setQaContent((prev) => ({ ...prev, [subtopicKey]: qaWithAnswers }));
+    // Save Q&A to localStorage per subtopic
+    const qaKey = `vidyaai_qa_${session.user.email}_${topic.title}`;
+    localStorage.setItem(qaKey, JSON.stringify(qaWithAnswers));
+    setQaLoading(false);
+  };
+
+  // Add a Print button that is only enabled if all questions have answers
+  const canPrintQa = (qaObj: any) =>
+    qaObj &&
+    qaObj.questions &&
+    qaObj.questions.every(
+      (q: any) => q.answer && q.answer !== "(No answer generated)"
+    );
+
+  const handlePrintQa = () => {
+    const qaObj = qa || qaContent[subtopicKey];
+    if (!canPrintQa(qaObj)) return;
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) return;
+    let html = `<html><head><title>Q&A</title><style>
+      body { font-family: Arial, sans-serif; margin: 40px; }
+      h1 { font-size: 1.5em; margin-bottom: 0.5em; }
+      .question { margin-bottom: 1.5em; }
+      .question-title { font-weight: bold; margin-bottom: 0.3em; }
+      .answer { margin-left: 1em; color: #333; }
+    </style></head><body>`;
+    html += `<h1>Q&A: ${subtopicKey}</h1>`;
+    html += `<div>Date: ${new Date().toLocaleString()}</div>`;
+    html += "<hr />";
+    qaObj.questions.forEach((q: any, idx: number) => {
+      html += `<div class='question'>`;
+      html += `<div class='question-title'>Q${idx + 1}: ${q.question}</div>`;
+      if (q.answer) {
+        html += `<div class='answer'>A: ${q.answer}</div>`;
+      }
+      html += `</div>`;
+    });
+    html += "</body></html>";
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
   };
 
   return (
@@ -401,19 +494,11 @@ function SubtopicCard({
               }
               const data = await res.json();
               if (res.ok && data.quiz) {
-                const key = `vidyaai_quiz_history_${session.user.email}`;
-                const history = JSON.parse(localStorage.getItem(key) || "[]");
-                history.unshift({
-                  ...data.quiz,
-                  date: new Date().toISOString(),
-                  topicLabel: topic.title,
-                  userEmail: session.user.email,
-                  content: content, // Save the content for future quiz attempts
-                });
-                localStorage.setItem(key, JSON.stringify(history.slice(0, 10)));
-                alert(
-                  "Quiz generated and saved! Go to the Quiz page to attempt it."
-                );
+                setQuiz(data.quiz);
+                setQuizExpanded(true);
+                // Save quiz to localStorage per subtopic
+                const quizKey = `vidyaai_quiz_${session.user.email}_${topic.title}`;
+                localStorage.setItem(quizKey, JSON.stringify(data.quiz));
               }
             } catch (error) {
               console.error("Error generating quiz:", error);
@@ -464,20 +549,46 @@ function SubtopicCard({
               }
               const data = await res.json();
               if (res.ok && data.quiz) {
-                const key = `vidyaai_qa_history_${session.user.email}`;
-                const history = JSON.parse(localStorage.getItem(key) || "[]");
-                history.unshift({
+                // For each question, generate an answer if not present
+                setQaLoading(true);
+                const questionsWithAnswers = await Promise.all(
+                  data.quiz.questions.map(async (q: any) => {
+                    if (q.answer && q.answer !== "") return q;
+                    try {
+                      const ansRes = await fetch("/api/gemini/evaluate", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ question: q.question }),
+                      });
+                      const ansData = await ansRes.json();
+                      return {
+                        ...q,
+                        answer: ansData.answer || "(No answer generated)",
+                      };
+                    } catch {
+                      return { ...q, answer: "(No answer generated)" };
+                    }
+                  })
+                );
+                const qaWithAnswers = {
                   ...data.quiz,
-                  date: new Date().toISOString(),
-                  topicLabel: topic.title,
-                  userEmail: session.user.email,
-                });
-                localStorage.setItem(key, JSON.stringify(history.slice(0, 10)));
-                alert("Q&A generated and saved!");
+                  questions: questionsWithAnswers,
+                };
+                setQa(qaWithAnswers);
+                setQaContent((prev) => ({
+                  ...prev,
+                  [subtopicKey]: qaWithAnswers,
+                }));
+                setQaExpanded((prev) => ({ ...prev, [subtopicKey]: true }));
+                // Save Q&A to localStorage per subtopic
+                const qaKey = `vidyaai_qa_${session.user.email}_${topic.title}`;
+                localStorage.setItem(qaKey, JSON.stringify(qaWithAnswers));
+                setQaLoading(false);
               }
             } catch (error) {
               console.error("Error generating Q&A:", error);
               alert("Failed to generate Q&A. Please try again.");
+              setQaLoading(false);
             } finally {
               setIsLoading(false);
             }
@@ -511,6 +622,104 @@ function SubtopicCard({
           )}
         </button>
       </div>
+      {/* Quiz Card with Expand/Collapse */}
+      {quiz && (
+        <div className="mt-4 border border-green-200 rounded-lg bg-green-50 p-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="font-bold text-green-800">
+              {quiz.title || "Quiz"}
+            </div>
+            <button
+              className="text-green-700 hover:text-green-900 text-xs font-semibold px-2 py-1 border border-green-200 rounded"
+              onClick={() => setQuizExpanded((prev) => !prev)}
+              type="button"
+            >
+              {quizExpanded ? "Collapse" : "Expand"}
+            </button>
+          </div>
+          {quizExpanded && quiz.questions && (
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleQuizSubmit(topic.title, quiz);
+              }}
+            >
+              <ul className="space-y-4">
+                {quiz.questions.map((q: any, i: number) => (
+                  <li
+                    key={i}
+                    className="bg-white rounded shadow p-3 border border-green-100"
+                  >
+                    <div className="font-semibold text-gray-900 mb-1">
+                      Q{i + 1}. {q.question}
+                    </div>
+                    {q.options && q.options.length > 0 && (
+                      <div className="flex flex-col gap-2 mt-2">
+                        {q.options.map((opt: string, oidx: number) => (
+                          <label
+                            key={oidx}
+                            className="flex items-center gap-2 cursor-pointer"
+                          >
+                            <input
+                              type="radio"
+                              name={`q${topic.title}-${i}`}
+                              value={opt}
+                              checked={
+                                (quizAnswers[topic.title]?.[i] ?? "") === opt
+                              }
+                              onChange={() =>
+                                handleQuizAnswer(topic.title, i, opt)
+                              }
+                              className="accent-blue-600"
+                              aria-label={opt}
+                              disabled={quizSubmitted[topic.title] || false}
+                            />
+                            <span>{opt}</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                    {quizSubmitted[topic.title] && (
+                      <div
+                        className={`mt-3 text-sm ${
+                          quizAnswers[topic.title] &&
+                          quizAnswers[topic.title][i] === q.correctAnswer
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
+                      >
+                        {quizAnswers[topic.title] &&
+                        quizAnswers[topic.title][i] === q.correctAnswer
+                          ? "Correct!"
+                          : `Incorrect. Correct answer: ${q.correctAnswer}`}
+                        {q.explanation && (
+                          <div className="mt-1 text-gray-600">
+                            Explanation: {q.explanation}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ul>
+              {!quizSubmitted[topic.title] && (
+                <button
+                  type="submit"
+                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg text-base sm:text-lg font-semibold hover:shadow-xl transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 mt-4"
+                  aria-label="Submit Quiz"
+                >
+                  Submit Quiz
+                </button>
+              )}
+              {quizSubmitted[topic.title] && (
+                <div className="mt-4 text-green-800 font-semibold text-center">
+                  Score: {quizScore[topic.title] || 0} / {quiz.questions.length}
+                </div>
+              )}
+            </form>
+          )}
+        </div>
+      )}
       {/* Expanded section for Teach Me This */}
       {isExpanded && (
         <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded">
@@ -586,8 +795,79 @@ function SubtopicCard({
               setTutorModal={setTutorModal}
               expandedCardId={expandedCardId}
               setExpandedCardId={setExpandedCardId}
+              quizAnswers={quizAnswers}
+              quizSubmitted={quizSubmitted}
+              quizScore={quizScore}
+              handleQuizAnswer={handleQuizAnswer}
+              handleQuizSubmit={handleQuizSubmit}
+              qaContent={qaContent}
+              qaExpanded={qaExpanded}
+              setQaContent={setQaContent}
+              setQaExpanded={setQaExpanded}
             />
           ))}
+        </div>
+      )}
+      {(qa || qaContent[subtopicKey]) && (
+        <div className="mt-4 border border-pink-200 rounded-lg bg-pink-50 p-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="font-bold text-pink-800">Subjective Q&A</div>
+            <button
+              className="text-pink-700 hover:text-pink-900 text-xs font-semibold px-2 py-1 border border-pink-200 rounded"
+              onClick={() =>
+                setQaExpanded((prev) => ({
+                  ...prev,
+                  [subtopicKey]: !prev[subtopicKey],
+                }))
+              }
+              type="button"
+            >
+              {qaExpanded[subtopicKey] ? "Collapse" : "Expand"}
+            </button>
+          </div>
+          <div className="flex gap-2 mb-2">
+            <button
+              className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs font-semibold cursor-pointer"
+              onClick={handleGenerateAnswers}
+              disabled={qaLoading}
+              type="button"
+            >
+              {qaLoading ? "Generating..." : "Generate Answers"}
+            </button>
+            <button
+              className="bg-gradient-to-r from-gray-600 to-gray-900 text-white px-3 py-1 rounded text-xs font-semibold"
+              onClick={handlePrintQa}
+              disabled={!canPrintQa(qa || qaContent[subtopicKey])}
+              type="button"
+            >
+              Print
+            </button>
+          </div>
+          {qaLoading && (
+            <div className="text-pink-700 text-sm mb-2">
+              Generating answers...
+            </div>
+          )}
+          {qaExpanded[subtopicKey] &&
+            (qa || qaContent[subtopicKey])?.questions && (
+              <ul className="space-y-4">
+                {(qa || qaContent[subtopicKey]).questions.map(
+                  (q: any, i: number) => (
+                    <li
+                      key={i}
+                      className="bg-white rounded shadow p-3 border border-pink-100"
+                    >
+                      <div className="font-semibold text-gray-900 mb-1">
+                        Q{i + 1}. {q.question}
+                      </div>
+                      {q.answer && (
+                        <div className="mt-2 text-gray-700">A: {q.answer}</div>
+                      )}
+                    </li>
+                  )
+                )}
+              </ul>
+            )}
         </div>
       )}
     </div>
@@ -734,6 +1014,38 @@ export default function UploadPage() {
 
   // Subject/themes modal state
   // Removed SubjectThemesModal and subjectModal state/logic
+
+  // Add state for quiz answers, submission, and score per subtopic
+  const [quizAnswers, setQuizAnswers] = useState<
+    Record<string, Record<number, string>>
+  >({});
+  const [quizSubmitted, setQuizSubmitted] = useState<Record<string, boolean>>(
+    {}
+  );
+  const [quizScore, setQuizScore] = useState<Record<string, number>>({});
+  const [qaContent, setQaContent] = useState<Record<string, any>>({});
+  const [qaExpanded, setQaExpanded] = useState<Record<string, boolean>>({});
+
+  // Handle answer selection for subtopic quiz
+  const handleQuizAnswer = (subtopic: string, idx: number, value: string) => {
+    setQuizAnswers((prev) => ({
+      ...prev,
+      [subtopic]: { ...(prev[subtopic] || {}), [idx]: value },
+    }));
+  };
+
+  // Handle quiz submission and scoring for subtopic quiz
+  const handleQuizSubmit = (subtopic: string, quiz: any) => {
+    const answers = quizAnswers[subtopic] || {};
+    let score = 0;
+    quiz.questions.forEach((q: any, idx: number) => {
+      if (q.type === "multiple_choice" && answers[idx] === q.correctAnswer) {
+        score += 1;
+      }
+    });
+    setQuizScore((prev) => ({ ...prev, [subtopic]: score }));
+    setQuizSubmitted((prev) => ({ ...prev, [subtopic]: true }));
+  };
 
   useEffect(() => {
     if (!session?.user?.email) return;
@@ -1133,6 +1445,15 @@ export default function UploadPage() {
                     setTutorModal={setTutorModal}
                     expandedCardId={null} // No expanded card for main topics
                     setExpandedCardId={() => {}}
+                    quizAnswers={quizAnswers}
+                    quizSubmitted={quizSubmitted}
+                    quizScore={quizScore}
+                    handleQuizAnswer={handleQuizAnswer}
+                    handleQuizSubmit={handleQuizSubmit}
+                    qaContent={qaContent}
+                    qaExpanded={qaExpanded}
+                    setQaContent={setQaContent}
+                    setQaExpanded={setQaExpanded}
                   />
                   {Array.isArray(t.subtopics) &&
                     t.subtopics.length > 0 &&
@@ -1145,6 +1466,15 @@ export default function UploadPage() {
                         setTutorModal={setTutorModal}
                         expandedCardId={null} // No expanded card for subtopics
                         setExpandedCardId={() => {}}
+                        quizAnswers={quizAnswers}
+                        quizSubmitted={quizSubmitted}
+                        quizScore={quizScore}
+                        handleQuizAnswer={handleQuizAnswer}
+                        handleQuizSubmit={handleQuizSubmit}
+                        qaContent={qaContent}
+                        qaExpanded={qaExpanded}
+                        setQaContent={setQaContent}
+                        setQaExpanded={setQaExpanded}
                       />
                     ))}
                 </React.Fragment>
@@ -1214,6 +1544,15 @@ export default function UploadPage() {
                             setTutorModal={setTutorModal}
                             expandedCardId={null}
                             setExpandedCardId={() => {}}
+                            quizAnswers={quizAnswers}
+                            quizSubmitted={quizSubmitted}
+                            quizScore={quizScore}
+                            handleQuizAnswer={handleQuizAnswer}
+                            handleQuizSubmit={handleQuizSubmit}
+                            qaContent={qaContent}
+                            qaExpanded={qaExpanded}
+                            setQaContent={setQaContent}
+                            setQaExpanded={setQaExpanded}
                           />
                         ))}
                       </div>

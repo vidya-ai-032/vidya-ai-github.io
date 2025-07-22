@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@auth/core": "^0.34.2",
+    "@google-cloud/storage": "^7.16.0",
     "@google/generative-ai": "^0.24.1",
     "formidable": "^3.5.4",
     "jspdf": "^3.0.1",

@@ -1,6 +1,7 @@
 "use client";
 import { useSession, signIn } from "next-auth/react";
 import { useEffect, useState } from "react";
+import { useRef } from "react";
 
 interface QA {
   questions: Array<{
@@ -17,6 +18,18 @@ export default function QAPage() {
   const { data: session, status } = useSession();
   const [qaHistory, setQaHistory] = useState<QA[]>([]);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [userAnswers, setUserAnswers] = useState<Record<string, string>>({});
+  const [evaluations, setEvaluations] = useState<Record<string, string>>({});
+  const recognitionRef = useRef<any>(null);
+  const [listeningIdx, setListeningIdx] = useState<string | null>(null);
+  const [expandedQuestions, setExpandedQuestions] = useState<
+    Record<string, boolean>
+  >({});
+  const [expandedCards, setExpandedCards] = useState<Record<number, boolean>>({
+    0: true,
+  });
+  const [loadingIdx, setLoadingIdx] = useState<number | null>(null);
+  const [successIdx, setSuccessIdx] = useState<number | null>(null);
 
   useEffect(() => {
     if (!session?.user?.email) return;
@@ -35,6 +48,146 @@ export default function QAPage() {
     );
     setQaHistory(updated);
     localStorage.setItem(key, JSON.stringify(updated));
+  };
+
+  // Generate answers for all questions in a Q&A card
+  const handleGenerateAnswers = async (qa: QA, idx: number) => {
+    if (!session?.user?.email) return;
+    setLoadingIdx(idx);
+    setSuccessIdx(null);
+    const updatedQuestions = await Promise.all(
+      qa.questions.map(async (q) => {
+        if (q.answer && q.answer.length > 0) return q; // Skip if already answered
+        try {
+          // Call Gemini answer API
+          const res = await fetch("/api/gemini/generate-answer", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ question: q.question }),
+          });
+          const data = await res.json();
+          console.log(
+            "[Gemini Answer API] Question:",
+            q.question,
+            "Response:",
+            data
+          );
+          return { ...q, answer: data.answer || "(No answer generated)" };
+        } catch (err) {
+          console.error(
+            "[Gemini Answer API] Error for question:",
+            q.question,
+            err
+          );
+          return { ...q, answer: "(Failed to generate answer)" };
+        }
+      })
+    );
+    // Update local state and localStorage
+    const updatedQa = { ...qa, questions: updatedQuestions };
+    setQaHistory((prev) => {
+      const copy = [...prev];
+      copy[idx] = updatedQa;
+      // Save to localStorage
+      if (session?.user?.email) {
+        const key = `vidyaai_qa_history_${session.user.email}`;
+        localStorage.setItem(key, JSON.stringify(copy));
+      }
+      return copy;
+    });
+    setLoadingIdx(null);
+    setSuccessIdx(idx);
+    setTimeout(() => setSuccessIdx(null), 2000);
+  };
+
+  // Handle user answer input
+  const handleUserAnswerChange = (
+    qaIdx: number,
+    qIdx: number,
+    value: string
+  ) => {
+    setUserAnswers((prev) => ({ ...prev, [`${qaIdx}-${qIdx}`]: value }));
+  };
+
+  // Handle answer evaluation
+  const handleEvaluate = async (
+    qa: QA,
+    q: any,
+    qaIdx: number,
+    qIdx: number
+  ) => {
+    const userAnswer = userAnswers[`${qaIdx}-${qIdx}`] || "";
+    if (!userAnswer.trim()) return;
+    try {
+      const res = await fetch("/api/gemini/evaluate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: q.question,
+          correctAnswer: q.answer || "",
+          studentAnswer: userAnswer,
+          questionType: q.type || "subjective",
+        }),
+      });
+      const data = await res.json();
+      setEvaluations((prev) => ({
+        ...prev,
+        [`${qaIdx}-${qIdx}`]:
+          data.evaluation?.feedback ||
+          data.evaluation ||
+          data.error ||
+          "No feedback",
+      }));
+    } catch (err) {
+      setEvaluations((prev) => ({
+        ...prev,
+        [`${qaIdx}-${qIdx}`]: "Failed to evaluate answer",
+      }));
+    }
+  };
+
+  // Speech-to-text for user answer
+  const handleSpeechInput = (qaIdx: number, qIdx: number) => {
+    if (!("webkitSpeechRecognition" in window)) {
+      alert("Speech recognition not supported in this browser.");
+      return;
+    }
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+      setListeningIdx(null);
+      return;
+    }
+    const recognition = new (window as any).webkitSpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      handleUserAnswerChange(qaIdx, qIdx, transcript);
+      setListeningIdx(null);
+    };
+    recognition.onerror = () => setListeningIdx(null);
+    recognition.onend = () => setListeningIdx(null);
+    recognition.start();
+    recognitionRef.current = recognition;
+    setListeningIdx(`${qaIdx}-${qIdx}`);
+  };
+
+  // Toggle expand/collapse for a question
+  const handleToggleExpand = (qaIdx: number, qIdx: number) => {
+    setExpandedQuestions((prev) => ({
+      ...prev,
+      [`${qaIdx}-${qIdx}`]: !prev[`${qaIdx}-${qIdx}`],
+    }));
+  };
+
+  // Toggle expand/collapse for a Q&A card
+  const handleToggleCardExpand = (idx: number) => {
+    setExpandedCards((prev) => ({
+      ...prev,
+      [idx]: !prev[idx],
+    }));
   };
 
   // Add PrintButton component if not already present
@@ -91,50 +244,163 @@ export default function QAPage() {
           <div className="text-gray-500 text-center">No Q&A generated yet.</div>
         ) : (
           <ul className="space-y-6">
-            {qaHistory.map((qa, idx) => (
-              <li
-                key={idx}
-                className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex flex-col relative pt-8"
-                id={`qna-section-${idx}`}
-              >
-                <div className="absolute top-2 right-2 flex gap-2">
-                  <button
-                    className="bg-red-500 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-semibold cursor-pointer"
-                    onClick={() => handleDelete(qa)}
-                    aria-label={`Delete Q&A for ${qa.topicLabel}`}
-                  >
-                    Delete
-                  </button>
-                  <PrintButton contentId={`qna-section-${idx}`} />
-                </div>
-                <div>
-                  <div className="font-bold text-lg text-blue-900 mb-1">
-                    {qa.topicLabel}
-                  </div>
-                  <div className="text-xs text-gray-500 mb-2">
-                    {new Date(qa.date).toLocaleString()}
+            {qaHistory.map((qa, idx) => {
+              const isCardExpanded = expandedCards[idx] ?? false;
+              return (
+                <li
+                  key={idx}
+                  className="bg-blue-50 border border-blue-200 rounded-xl p-4 flex flex-col relative pt-8 mb-4"
+                  id={`qna-section-${idx}`}
+                >
+                  <div className="flex flex-wrap gap-2 justify-end mb-2">
+                    <button
+                      className="text-blue-600 hover:text-blue-800 text-xs font-semibold px-2 py-1 border border-blue-200 rounded"
+                      onClick={() => handleToggleCardExpand(idx)}
+                      type="button"
+                    >
+                      {isCardExpanded ? "Collapse" : "Expand"}
+                    </button>
+                    <button
+                      className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs font-semibold cursor-pointer"
+                      onClick={() => handleGenerateAnswers(qa, idx)}
+                      aria-label={`Generate answers for ${qa.topicLabel}`}
+                      disabled={loadingIdx === idx}
+                    >
+                      {loadingIdx === idx ? (
+                        <span className="flex items-center">
+                          <span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></span>
+                          Generating...
+                        </span>
+                      ) : (
+                        "Generate Answers"
+                      )}
+                    </button>
+                    {successIdx === idx && (
+                      <span className="text-green-700 text-xs font-semibold ml-2">
+                        Answers generated!
+                      </span>
+                    )}
+                    <button
+                      className="bg-red-500 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-semibold cursor-pointer"
+                      onClick={() => handleDelete(qa)}
+                      aria-label={`Delete Q&A for ${qa.topicLabel}`}
+                    >
+                      Delete
+                    </button>
+                    <PrintButton contentId={`qna-section-${idx}`} />
                   </div>
                   <div>
-                    {qa.questions && qa.questions.length > 0 ? (
-                      <ul className="list-decimal pl-5 space-y-2">
-                        {qa.questions.map((q, i) => (
-                          <li key={i}>
-                            <div className="font-semibold text-gray-800">
-                              Q: {q.question}
-                            </div>
-                            {q.answer && (
-                              <div className="text-gray-700">A: {q.answer}</div>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <div className="text-gray-500">No questions found.</div>
+                    <div className="font-bold text-lg text-blue-900 mb-1">
+                      {qa.topicLabel}
+                    </div>
+                    <div className="text-xs text-gray-500 mb-2">
+                      {new Date(qa.date).toLocaleString()}
+                    </div>
+                    {isCardExpanded && (
+                      <div>
+                        {qa.questions && qa.questions.length > 0 ? (
+                          <ul className="list-decimal pl-5 space-y-4">
+                            {qa.questions.map((q, i) => {
+                              const isExpanded =
+                                expandedQuestions[`${idx}-${i}`] ?? false;
+                              return (
+                                <li
+                                  key={i}
+                                  className="bg-white rounded-lg shadow border border-blue-100 p-3 mb-2"
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div className="font-semibold text-gray-800 text-base">
+                                      Q: {q.question}
+                                    </div>
+                                    <button
+                                      className="text-blue-600 hover:text-blue-800 text-xs font-semibold px-2 py-1 border border-blue-200 rounded"
+                                      onClick={() => handleToggleExpand(idx, i)}
+                                      type="button"
+                                    >
+                                      {isExpanded ? "Collapse" : "Expand"}
+                                    </button>
+                                  </div>
+                                  {isExpanded && (
+                                    <div className="mt-2 space-y-2">
+                                      {/* User answer input */}
+                                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                                        <input
+                                          type="text"
+                                          className="border rounded px-2 py-1 text-sm w-full sm:w-2/3"
+                                          placeholder="Type your answer or use the mic"
+                                          value={
+                                            userAnswers[`${idx}-${i}`] || ""
+                                          }
+                                          onChange={(e) =>
+                                            handleUserAnswerChange(
+                                              idx,
+                                              i,
+                                              e.target.value
+                                            )
+                                          }
+                                        />
+                                        <div className="flex gap-2 mt-1 sm:mt-0">
+                                          <button
+                                            className={`bg-blue-500 text-white px-2 py-1 rounded text-xs font-semibold ${
+                                              listeningIdx === `${idx}-${i}`
+                                                ? "bg-blue-700"
+                                                : ""
+                                            }`}
+                                            onClick={() =>
+                                              handleSpeechInput(idx, i)
+                                            }
+                                            type="button"
+                                          >
+                                            {listeningIdx === `${idx}-${i}`
+                                              ? "Listening..."
+                                              : "🎤"}
+                                          </button>
+                                          <button
+                                            className="bg-green-600 text-white px-2 py-1 rounded text-xs font-semibold"
+                                            onClick={() =>
+                                              handleEvaluate(qa, q, idx, i)
+                                            }
+                                            type="button"
+                                          >
+                                            Evaluate
+                                          </button>
+                                        </div>
+                                      </div>
+                                      {/* Evaluation feedback */}
+                                      {evaluations[`${idx}-${i}`] && (
+                                        <div className="text-green-700 text-sm mt-1 whitespace-pre-line border-l-4 border-green-200 pl-2 bg-green-50 rounded">
+                                          <span className="font-semibold">
+                                            Feedback:
+                                          </span>{" "}
+                                          {evaluations[`${idx}-${i}`]}
+                                        </div>
+                                      )}
+                                      {/* Reference answer */}
+                                      {q.answer && (
+                                        <div className="text-gray-700 mt-1 border-l-4 border-blue-200 pl-2 bg-blue-50 rounded">
+                                          <span className="font-semibold">
+                                            Reference Answer:
+                                          </span>{" "}
+                                          {q.answer}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        ) : (
+                          <div className="text-gray-500">
+                            No questions found.
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
-                </div>
-              </li>
-            ))}
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>

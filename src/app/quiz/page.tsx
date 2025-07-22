@@ -59,6 +59,22 @@ export default function QuizPage() {
   const [aiFeedback, setAiFeedback] = useState<{
     [idx: number]: { score: number; feedback: string; suggestions: string[] };
   }>({});
+  const [perSubtopicQuizzes, setPerSubtopicQuizzes] = useState<
+    Record<string, any>
+  >({});
+  const [expandedQuizCards, setExpandedQuizCards] = useState<
+    Record<string, boolean>
+  >({});
+  // Add state for per-subtopic quiz answers, submission, and feedback
+  const [perSubtopicQuizAnswers, setPerSubtopicQuizAnswers] = useState<
+    Record<string, Record<number, string>>
+  >({});
+  const [perSubtopicQuizSubmitted, setPerSubtopicQuizSubmitted] = useState<
+    Record<string, boolean>
+  >({});
+  const [perSubtopicQuizScore, setPerSubtopicQuizScore] = useState<
+    Record<string, number>
+  >({});
 
   // Sample topics (replace with real topics from upload/content processing in future)
   const sampleTopics = useMemo(
@@ -119,6 +135,27 @@ export default function QuizPage() {
       localStorage.removeItem("vidyaai_selected_topic");
     }
   }, [uploadedTopics.length, allTopics]);
+
+  // Load per-subtopic quizzes from localStorage
+  useEffect(() => {
+    if (!session?.user?.email) return;
+    const quizzes: Record<string, any> = {};
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(`vidyaai_quiz_${session.user.email}_`)) {
+        const quiz = JSON.parse(localStorage.getItem(key) || "null");
+        if (quiz) {
+          // Extract subtopic title from key
+          const subtopic = key.replace(
+            `vidyaai_quiz_${session.user.email}_`,
+            ""
+          );
+          quizzes[subtopic] = quiz;
+        }
+      }
+    }
+    setPerSubtopicQuizzes(quizzes);
+  }, [session?.user?.email]);
 
   const generateQuiz = async () => {
     setLoading(true);
@@ -465,6 +502,112 @@ export default function QuizPage() {
     localStorage.setItem(key, JSON.stringify(updated));
   };
 
+  // Handle answer selection for per-subtopic quiz
+  const handlePerSubtopicQuizAnswer = (
+    subtopic: string,
+    idx: number,
+    value: string
+  ) => {
+    setPerSubtopicQuizAnswers((prev) => ({
+      ...prev,
+      [subtopic]: { ...(prev[subtopic] || {}), [idx]: value },
+    }));
+  };
+
+  // Handle quiz submission and scoring for per-subtopic quiz
+  const handlePerSubtopicQuizSubmit = (subtopic: string, quiz: any) => {
+    const answers = perSubtopicQuizAnswers[subtopic] || {};
+    let score = 0;
+    quiz.questions.forEach((q: any, idx: number) => {
+      if (q.type === "multiple_choice" && answers[idx] === q.correctAnswer) {
+        score += 1;
+      }
+    });
+    setPerSubtopicQuizScore((prev) => ({ ...prev, [subtopic]: score }));
+    setPerSubtopicQuizSubmitted((prev) => ({ ...prev, [subtopic]: true }));
+  };
+
+  // Add delete handler for per-subtopic quizzes
+  const handleDeletePerSubtopicQuiz = (subtopic: string) => {
+    if (!session?.user?.email) return;
+    const quizKey = `vidyaai_quiz_${session.user.email}_${subtopic}`;
+    localStorage.removeItem(quizKey);
+    setPerSubtopicQuizzes((prev) => {
+      const copy = { ...prev };
+      delete copy[subtopic];
+      return copy;
+    });
+    setExpandedQuizCards((prev) => {
+      const copy = { ...prev };
+      delete copy[subtopic];
+      return copy;
+    });
+    setPerSubtopicQuizAnswers((prev) => {
+      const copy = { ...prev };
+      delete copy[subtopic];
+      return copy;
+    });
+    setPerSubtopicQuizSubmitted((prev) => {
+      const copy = { ...prev };
+      delete copy[subtopic];
+      return copy;
+    });
+    setPerSubtopicQuizScore((prev) => {
+      const copy = { ...prev };
+      delete copy[subtopic];
+      return copy;
+    });
+  };
+
+  // Add print handler for per-subtopic quiz
+  const handlePrintPerSubtopicQuiz = (subtopic: string, quiz: any) => {
+    const answers = perSubtopicQuizAnswers[subtopic] || {};
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) return;
+    let html = `<html><head><title>Quiz Result</title><style>
+      body { font-family: Arial, sans-serif; margin: 40px; }
+      h1 { font-size: 1.5em; margin-bottom: 0.5em; }
+      .question { margin-bottom: 1.5em; }
+      .question-title { font-weight: bold; margin-bottom: 0.3em; }
+      .answer { margin-left: 1em; color: #333; }
+      .key { color: #888; font-size: 0.95em; }
+      .correct { color: #008000; }
+      .incorrect { color: #c00; }
+      .explanation { color: #555; font-size: 0.95em; margin-top: 0.5em; }
+    </style></head><body>`;
+    html += `<h1>Quiz Result: ${subtopic}</h1>`;
+    html += `<div>Date: ${new Date().toLocaleString()}</div>`;
+    html += "<hr />";
+    quiz.questions.forEach((q: any, idx: number) => {
+      html += `<div class='question'>`;
+      html += `<div class='question-title'>Q${idx + 1}: ${q.question}</div>`;
+      if (q.options && q.options.length > 0) {
+        html += "<ul>";
+        q.options.forEach((opt: string) => {
+          const isUser = answers[idx] === opt;
+          const isCorrect = q.correctAnswer === opt;
+          html += `<li class='${
+            isUser ? (isCorrect ? "correct" : "incorrect") : ""
+          }'>`;
+          html += `${opt}`;
+          if (isUser) html += ` <span class='key'>(Your answer)</span>`;
+          if (isCorrect) html += ` <span class='key'>(Correct answer)</span>`;
+          html += `</li>`;
+        });
+        html += "</ul>";
+      }
+      if (q.explanation) {
+        html += `<div class='explanation'>Explanation: ${q.explanation}</div>`;
+      }
+      html += `</div>`;
+    });
+    html += "</body></html>";
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  };
+
   if (status !== "authenticated") {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -493,6 +636,149 @@ export default function QuizPage() {
       >
         Quiz
       </h1>
+      {/* Render per-subtopic quizzes */}
+      {Object.keys(perSubtopicQuizzes).length > 0 && (
+        <div className="w-full max-w-2xl mx-auto mb-8">
+          <h2 className="text-lg font-semibold mb-2">
+            Generated Quizzes by Topic
+          </h2>
+          <ul className="space-y-6">
+            {Object.entries(perSubtopicQuizzes).map(([subtopic, quiz], idx) => {
+              const isExpanded = expandedQuizCards[subtopic];
+              const answers = perSubtopicQuizAnswers[subtopic] || {};
+              const submitted = perSubtopicQuizSubmitted[subtopic] || false;
+              const score = perSubtopicQuizScore[subtopic] || 0;
+              return (
+                <li
+                  key={subtopic}
+                  className="bg-green-50 border border-green-200 rounded-xl p-4 flex flex-col relative mb-4"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="font-bold text-green-800 text-base">
+                      {subtopic}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        className="text-green-700 hover:text-green-900 text-xs font-semibold px-2 py-1 border border-green-200 rounded"
+                        onClick={() =>
+                          setExpandedQuizCards((prev) => ({
+                            ...prev,
+                            [subtopic]: !prev[subtopic],
+                          }))
+                        }
+                        type="button"
+                      >
+                        {isExpanded ? "Collapse" : "Expand"}
+                      </button>
+                      <button
+                        className="bg-red-500 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-semibold cursor-pointer"
+                        onClick={() => handleDeletePerSubtopicQuiz(subtopic)}
+                        aria-label={`Delete quiz for ${subtopic}`}
+                        type="button"
+                      >
+                        Delete
+                      </button>
+                      {submitted && (
+                        <button
+                          className="bg-gradient-to-r from-gray-600 to-gray-900 text-white px-3 py-1 rounded text-xs font-semibold ml-2"
+                          onClick={() =>
+                            handlePrintPerSubtopicQuiz(subtopic, quiz)
+                          }
+                          aria-label={`Print quiz for ${subtopic}`}
+                          type="button"
+                        >
+                          Print
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  {isExpanded && quiz.questions && (
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        handlePerSubtopicQuizSubmit(subtopic, quiz);
+                      }}
+                    >
+                      <ul className="space-y-4">
+                        {quiz.questions.map((q: any, i: number) => (
+                          <li
+                            key={i}
+                            className="bg-white rounded shadow p-3 border border-green-100"
+                          >
+                            <div className="font-semibold text-gray-900 mb-1">
+                              Q{i + 1}. {q.question}
+                            </div>
+                            {q.options && q.options.length > 0 && (
+                              <div className="flex flex-col gap-2 mt-2">
+                                {q.options.map((opt: string, oidx: number) => (
+                                  <label
+                                    key={oidx}
+                                    className="flex items-center gap-2 cursor-pointer"
+                                  >
+                                    <input
+                                      type="radio"
+                                      name={`q${subtopic}-${i}`}
+                                      value={opt}
+                                      checked={answers[i] === opt}
+                                      onChange={() =>
+                                        handlePerSubtopicQuizAnswer(
+                                          subtopic,
+                                          i,
+                                          opt
+                                        )
+                                      }
+                                      className="accent-blue-600"
+                                      aria-label={opt}
+                                      disabled={submitted}
+                                    />
+                                    <span>{opt}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            )}
+                            {submitted && (
+                              <div
+                                className={`mt-3 text-sm ${
+                                  answers[i] === q.correctAnswer
+                                    ? "text-green-600"
+                                    : "text-red-600"
+                                }`}
+                              >
+                                {answers[i] === q.correctAnswer
+                                  ? "Correct!"
+                                  : `Incorrect. Correct answer: ${q.correctAnswer}`}
+                                {q.explanation && (
+                                  <div className="mt-1 text-gray-600">
+                                    Explanation: {q.explanation}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                      {!submitted && (
+                        <button
+                          type="submit"
+                          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg text-base sm:text-lg font-semibold hover:shadow-xl transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 mt-4"
+                          aria-label="Submit Quiz"
+                        >
+                          Submit Quiz
+                        </button>
+                      )}
+                      {submitted && (
+                        <div className="mt-4 text-green-800 font-semibold text-center">
+                          Score: {score} / {quiz.questions.length}
+                        </div>
+                      )}
+                    </form>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
       {session?.user?.email && (
         <>
           {/* Analytics section */}
