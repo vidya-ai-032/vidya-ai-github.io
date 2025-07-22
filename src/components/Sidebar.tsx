@@ -15,10 +15,34 @@ const navLinks = [
 ];
 
 export default function Sidebar() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [quizCount, setQuizCount] = useState(0);
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
+
+  // Helper to clear all user-related localStorage keys
+  function clearUserLocalStorage(email?: string) {
+    if (!email || typeof window === "undefined") return;
+    const keysToRemove = [
+      `vidyaai_quiz_history_${email}`,
+      `vidyaai_library_${email}`,
+      `vidyaai_library_expanded_${email}`,
+      `vidyaai_qa_history_${email}`,
+      `vidyaai_uploaded_topics_${email}`,
+      `vidyaai_last_quiz_result_${email}`,
+      // Remove all per-subtopic quiz keys
+    ];
+    // Remove per-subtopic quiz keys
+    Object.keys(localStorage).forEach((key) => {
+      if (
+        key.startsWith(`vidyaai_quiz_${email}_`) ||
+        key.startsWith(`vidyaai_subtopics_${email}_`)
+      ) {
+        localStorage.removeItem(key);
+      }
+    });
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
+  }
 
   useEffect(() => {
     if (typeof window !== "undefined" && session?.user?.email) {
@@ -36,6 +60,9 @@ export default function Sidebar() {
     }
   }, [session?.user?.email]);
 
+  // Only show user info if authenticated
+  const isAuthenticated = status === "authenticated" && session?.user;
+
   return (
     <aside
       className={`bg-white shadow-md border-r border-gray-200 flex flex-col transition-all duration-300 ${
@@ -43,9 +70,9 @@ export default function Sidebar() {
       }`}
     >
       <div className="flex items-center justify-between h-16 px-4 border-b border-gray-100">
-        {!collapsed && (
+        {!collapsed && isAuthenticated && (
           <div className="flex items-center gap-3">
-            {session?.user?.image ? (
+            {session.user.image ? (
               <img
                 src={session.user.image}
                 alt={session.user.name || "User"}
@@ -53,16 +80,16 @@ export default function Sidebar() {
               />
             ) : (
               <span className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xl">
-                {session?.user?.name ? session.user.name.charAt(0) : "V"}
+                {session.user.name ? session.user.name.charAt(0) : "V"}
               </span>
             )}
             <span className="text-lg font-bold text-blue-600">
-              {session?.user?.name || "VidyaAI"}
+              {session.user.name || "VidyaAI"}
             </span>
           </div>
         )}
         <button
-          className="text-gray-500 hover:text-blue-600 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="text-gray-500 hover:text-blue-500 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
           onClick={() => setCollapsed(!collapsed)}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
@@ -92,8 +119,8 @@ export default function Sidebar() {
               href={link.href}
               className={`flex items-center gap-3 px-4 py-2 rounded-lg font-medium transition-colors ${
                 isActive
-                  ? "bg-blue-600 text-white shadow-md"
-                  : "text-gray-700 hover:bg-blue-100 hover:text-blue-700"
+                  ? "bg-blue-400 text-white shadow-md"
+                  : "text-gray-700 hover:bg-blue-100 hover:text-blue-500"
               } ${collapsed ? "justify-center" : ""}`}
               title={collapsed ? link.label : undefined}
             >
@@ -110,28 +137,33 @@ export default function Sidebar() {
       </nav>
 
       <div className="mt-auto p-4 border-t border-gray-100">
-        <button
-          onClick={() => signOut()}
-          className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg font-medium transition-colors text-gray-700 hover:bg-red-100 hover:text-red-700 ${
-            collapsed ? "justify-center" : ""
-          }`}
-          title={collapsed ? "Sign Out" : undefined}
-        >
-          <svg
-            className="w-6 h-6"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+        {isAuthenticated ? (
+          <button
+            onClick={() => {
+              clearUserLocalStorage(session.user.email);
+              signOut();
+            }}
+            className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg font-medium transition-colors text-gray-700 hover:bg-red-100 hover:text-red-700 ${
+              collapsed ? "justify-center" : ""
+            }`}
+            title={collapsed ? "Sign Out" : undefined}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-            />
-          </svg>
-          {!collapsed && <span>Sign Out</span>}
-        </button>
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+              />
+            </svg>
+            {!collapsed && <span>Sign Out</span>}
+          </button>
+        ) : null}
       </div>
     </aside>
   );

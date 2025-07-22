@@ -8,7 +8,10 @@ export function useAuth() {
 
   const login = async (provider?: string) => {
     try {
-      await signIn(provider || "google", { callbackUrl: "/dashboard" });
+      await signIn(provider || "google", {
+        callbackUrl: "/dashboard",
+        prompt: "select_account",
+      });
     } catch (error) {
       console.error("Login error:", error);
     }

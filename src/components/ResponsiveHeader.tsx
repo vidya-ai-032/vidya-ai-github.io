@@ -30,7 +30,7 @@ export default function ResponsiveHeader() {
           <div className="flex items-center space-x-3">
             <Link
               href="/"
-              className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xl hover-flip"
+              className="w-10 h-10 bg-blue-400 rounded-lg flex items-center justify-center text-white font-bold text-xl hover-flip"
               aria-label="Home"
             >
               V
@@ -50,8 +50,8 @@ export default function ResponsiveHeader() {
                   href={link.href}
                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                     isActive
-                      ? "bg-blue-600 text-white"
-                      : "text-gray-700 hover:bg-blue-100 hover:text-blue-700"
+                      ? "bg-blue-400 text-white"
+                      : "text-gray-700 hover:bg-blue-100 hover:text-blue-500"
                   }`}
                 >
                   {link.label}
@@ -68,7 +68,7 @@ export default function ResponsiveHeader() {
             ) : (
               <button
                 onClick={() => signIn("google", { prompt: "select_account" })}
-                className="px-3 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                className="px-3 py-2 rounded-lg text-sm font-medium bg-blue-400 text-white hover:bg-blue-500 transition-colors"
               >
                 Sign In
               </button>
@@ -147,7 +147,7 @@ export default function ResponsiveHeader() {
                 signIn("google", { prompt: "select_account" });
                 setOpen(false);
               }}
-              className="w-full text-left block px-3 py-2 rounded-lg text-base font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+              className="w-full text-left block px-3 py-2 rounded-lg text-base font-medium bg-blue-400 text-white hover:bg-blue-500 transition-colors"
             >
               Sign In
             </button>
