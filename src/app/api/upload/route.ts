@@ -10,6 +10,8 @@ const ACCEPTED_TYPES = [
   "image/png",
 ];
 
+const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
@@ -26,6 +28,12 @@ export async function POST(request: NextRequest) {
     // Read file buffer
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+    if (buffer.length > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { error: "File is too large. Maximum allowed size is 15MB." },
+        { status: 400 }
+      );
+    }
     // Ensure uploads directory exists
     const uploadDir = join(process.cwd(), "uploads");
     mkdirSync(uploadDir, { recursive: true });

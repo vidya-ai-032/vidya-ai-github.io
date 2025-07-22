@@ -1,5 +1,5 @@
 "use client";
-import { useSession } from "next-auth/react";
+import { useSession, signIn } from "next-auth/react";
 import { useEffect, useState } from "react";
 
 interface QA {
@@ -14,8 +14,9 @@ interface QA {
 }
 
 export default function QAPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [qaHistory, setQaHistory] = useState<QA[]>([]);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (!session?.user?.email) return;
@@ -61,6 +62,22 @@ export default function QAPage() {
       >
         Print
       </button>
+    );
+  }
+
+  if (status !== "authenticated") {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="bg-white p-8 rounded shadow text-center">
+          <h2 className="text-xl font-bold mb-4">Sign in required</h2>
+          <button
+            className="bg-blue-600 text-white px-4 py-2 rounded"
+            onClick={() => signIn("google", { prompt: "select_account" })}
+          >
+            Sign In with Google
+          </button>
+        </div>
+      </div>
     );
   }
 

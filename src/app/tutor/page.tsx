@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useSession, signIn } from "next-auth/react";
 
 interface Message {
   role: "user" | "assistant";
@@ -40,6 +41,7 @@ declare global {
 }
 
 export default function TutorPage() {
+  const { data: session, status } = useSession();
   const [isListening, setIsListening] = useState(false);
   const [input, setInput] = useState("");
   const [interim, setInterim] = useState("");
@@ -227,6 +229,22 @@ export default function TutorPage() {
     setInterim("");
     sendMessage(s);
   };
+
+  if (status !== "authenticated") {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="bg-white p-8 rounded shadow text-center">
+          <h2 className="text-xl font-bold mb-4">Sign in required</h2>
+          <button
+            className="bg-blue-600 text-white px-4 py-2 rounded"
+            onClick={() => signIn("google", { prompt: "select_account" })}
+          >
+            Sign In with Google
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 py-6 sm:py-12 px-2 sm:px-4">

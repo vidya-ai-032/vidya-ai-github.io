@@ -44,6 +44,88 @@ function getGeminiModel() {
   return genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 }
 
+async function generateWithRetry(model, prompt, maxRetries = 3) {
+  let lastError = null;
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const result = await model.generateContent(prompt);
+      return result;
+    } catch (error) {
+      lastError = error;
+      // Check for Gemini API error details
+      if (error && typeof error === "object") {
+        if (error.message && error.message.includes("quota")) {
+          error.userMessage =
+            "You have exceeded your Gemini API quota. Please use a different API key in settings or wait for your quota to reset.";
+        } else if (error.message && error.message.includes("API key")) {
+          error.userMessage =
+            "Your Gemini API key is invalid or missing. Please check your settings.";
+        } else if (error.message && error.message.includes("429")) {
+          error.userMessage =
+            "You are being rate limited by Gemini. Please wait and try again.";
+        } else if (error.message && error.message.includes("401")) {
+          error.userMessage = "Unauthorized: Please check your Gemini API key.";
+        } else if (error.message && error.message.includes("503")) {
+          error.userMessage = "Gemini API is overloaded. Retrying...";
+        }
+      }
+      // Check if the error is a 503 (overloaded) error
+      if (error.message && error.message.includes("503")) {
+        console.warn(`Gemini API overloaded. Retrying in ${i + 1}s...`);
+        await new Promise((resolve) => setTimeout(resolve, (i + 1) * 1000)); // Exponential backoff
+        continue;
+      }
+      // For other errors, fail immediately
+      throw error;
+    }
+  }
+  // If all retries fail, throw the last captured error
+  throw (
+    lastError || new Error("Gemini API request failed after multiple retries.")
+  );
+}
+
+// Helper to safely parse Gemini JSON
+function safeParseGeminiJSON(raw) {
+  // Remove code block markers if present
+  let jsonString = raw.trim();
+  if (jsonString.startsWith("```json")) {
+    jsonString = jsonString.replace(/^```json/, "");
+  }
+  if (jsonString.startsWith("```")) {
+    jsonString = jsonString.replace(/^```/, "");
+  }
+  if (jsonString.endsWith("```")) {
+    jsonString = jsonString.replace(/```$/, "");
+  }
+  jsonString = jsonString.trim();
+
+  // If the string is double-encoded, decode once
+  if (jsonString.startsWith('"') && jsonString.endsWith('"')) {
+    try {
+      jsonString = JSON.parse(jsonString);
+    } catch (e) {
+      // If parsing fails, continue with the original string
+    }
+  }
+
+  // Remove all control characters except for allowed whitespace
+  jsonString = jsonString.replace(/[\u0000-\u001F\u007F]/g, (c) => {
+    if (c === "\n" || c === "\r" || c === "\t") return c;
+    return "";
+  });
+
+  try {
+    return JSON.parse(jsonString);
+  } catch (err) {
+    console.error("Failed to parse Gemini JSON:", jsonString, err);
+    throw Object.assign(
+      new Error("Gemini returned invalid JSON. Please try again."),
+      { rawResponse: raw }
+    );
+  }
+}
+
 export class GeminiService {
   // Content Processing Service
   static async processContent(
@@ -52,47 +134,61 @@ export class GeminiService {
   ): Promise<ContentTopic[]> {
     try {
       const prompt = `
-        Break down the following ${subject} content into main topics and subtopics. For each topic, provide:
-        - title
-        - summary (2-3 sentences)
-        - 3-5 key points
-        - subtopics: an array of subtopic objects (with the same structure, and can be nested further if needed)
+        You are an expert teacher and subject matter expert. Analyze the following document content and:
+
+        1. Identify the main subject and theme of the document.
+        2. Break down the content into meaningful subtopics based on the actual content structure and depth. Don't force a specific number - extract what's naturally present in the document.
+        3. For each subtopic, provide:
+           - A clear, descriptive heading that reflects the content
+           - A detailed paragraph (4-6 sentences) that thoroughly explains the subtopic, its importance, and its relationship to the main subject
+           - 3-5 key points that highlight crucial concepts, examples, or applications
+        4. Focus on accuracy and educational value. Each subtopic should be self-contained but show its connection to the broader subject.
 
         Format the response as a JSON array:
         [
           {
-            "title": "Main Topic",
-            "summary": "Summary of the main topic.",
-            "keyPoints": ["Point 1", "Point 2", "Point 3"],
-            "subtopics": [
-              {
-                "title": "Subtopic",
-                "summary": "Summary of the subtopic.",
-                "keyPoints": ["Point 1", "Point 2"],
-                "subtopics": [ ... ]
-              }
-            ]
+            "title": "Subtopic Heading",
+            "summary": "Detailed paragraph explaining the subtopic...",
+            "keyPoints": ["Key Point 1", "Key Point 2", "Key Point 3"],
+            "estimatedTime": "X minutes"
           }
         ]
 
-        Make sure the topics and subtopics are logical, progressive, and suitable for students.
+        Important:
+        - Do NOT hallucinate or use file metadata
+        - Only extract topics actually present in the content
+        - Ensure summaries are thorough and educational
+        - Include estimated study time for each subtopic
       `;
 
       const model = getGeminiModel();
-      const result = await model.generateContent(prompt);
+      const fullPrompt = `${prompt}\n\nDocument Content:\n${content}`;
+      const result = await generateWithRetry(model, fullPrompt);
       const response = await result.response;
       const text = response.text();
       console.log("Gemini raw response:", text); // Debug Gemini response
       // Extract JSON from the response
       const jsonMatch = text.match(/\[[\s\S]*\]/);
       if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]);
+        return safeParseGeminiJSON(jsonMatch[0]);
       }
 
       throw new Error("Failed to parse content processing response");
     } catch (error) {
       console.error("Error processing content:", error);
-      throw new Error("Failed to process content");
+      // If error has userMessage, throw that for the API route to catch
+      if (error && error.userMessage) {
+        throw new Error(error.userMessage);
+      }
+      // If error is from parsing, include the raw response if available
+      if (error instanceof Error && error.message.includes("parse")) {
+        throw new Error(
+          `Failed to process content: ${error.message}${
+            error.rawResponse ? ` | Raw response: ${error.rawResponse}` : ""
+          }`
+        );
+      }
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 
@@ -104,7 +200,7 @@ export class GeminiService {
   ): Promise<Quiz> {
     try {
       const prompt = `
-        Generate a quiz based on the following ${subject} content.
+        Generate an engaging, thought-provoking quiz based on the following ${subject} content.
         
         Content: ${content}
         
@@ -117,20 +213,31 @@ export class GeminiService {
         }
         
         Requirements:
-        - Create 5 questions
-        - For MCQ: Provide 4 options per question with one correct answer
-        - For Subjective: Provide detailed explanations
-        - For Creative: Focus on application and problem-solving
-        - Include explanations for correct answers
-        - Estimate total time (2-3 minutes per question)
+        1. Create 5 questions that:
+           - Start with a real-world scenario or context
+           - Require understanding and application of concepts
+           - Challenge students to think critically
+           - Connect different aspects of the topic
         
-        Format the response as a JSON object with the following structure:
+        2. For each question type:
+           - MCQ: Create plausible options that test understanding, not just recall
+           - Subjective: Ask for analysis, comparison, or evaluation
+           - Creative: Present real-world problems requiring application of concepts
+        
+        3. For each question, provide:
+           - A detailed scenario or context
+           - Clear question text
+           - For MCQ: 4 well-thought-out options
+           - A thorough explanation of the answer
+           - Learning points or key takeaways
+        
+        Format the response as a JSON object:
         {
           "title": "Quiz Title",
           "subject": "${subject}",
           "questions": [
             {
-              "question": "Question text",
+              "question": "Scenario + Question text",
               "type": "${
                 quizType === "mcq"
                   ? "multiple_choice"
@@ -139,29 +246,43 @@ export class GeminiService {
                   : "creative"
               }",
               "options": ["Option A", "Option B", "Option C", "Option D"],
-              "correctAnswer": "Correct answer or explanation",
-              "explanation": "Why this is correct"
+              "correctAnswer": "Correct answer or evaluation criteria",
+              "explanation": "Detailed explanation and learning points"
             }
           ],
-          "totalTime": 15
+          "totalTime": 25
         }
+        
+        Note: Allow 5 minutes per question for deeper thinking and analysis.
       `;
 
       const model = getGeminiModel();
-      const result = await model.generateContent(prompt);
+      const result = await generateWithRetry(model, prompt);
       const response = await result.response;
       const text = response.text();
 
       // Extract JSON from the response
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]);
+        return safeParseGeminiJSON(jsonMatch[0]);
       }
 
       throw new Error("Failed to parse quiz generation response");
     } catch (error) {
       console.error("Error generating quiz:", error);
-      throw new Error("Failed to generate quiz");
+      // If error has userMessage, throw that for the API route to catch
+      if (error && error.userMessage) {
+        throw new Error(error.userMessage);
+      }
+      // If error is from parsing, include the raw response if available
+      if (error instanceof Error && error.message.includes("parse")) {
+        throw new Error(
+          `Failed to generate quiz: ${error.message}${
+            error.rawResponse ? ` | Raw response: ${error.rawResponse}` : ""
+          }`
+        );
+      }
+      throw error instanceof Error ? error : new Error(String(error));
     }
   }
 
@@ -173,12 +294,12 @@ export class GeminiService {
       role: "user" | "assistant";
       content: string;
     }> = []
-  ): Promise<TutorResponse> {
+  ): Promise<TutorResponse & { fallback?: boolean }> {
     try {
       const prompt = `
-        You are an AI tutor for VidyaAI, a learning platform. Your role is to help students learn effectively.
+        You are an expert AI tutor for VidyaAI, specializing in creating engaging, scenario-based learning experiences.
         
-        ${context ? `Context: ${context}` : ""}
+        ${context ? `Topic Context: ${context}` : ""}
         
         ${
           conversationHistory.length > 0
@@ -190,35 +311,76 @@ export class GeminiService {
         
         Student's question: ${userMessage}
         
-        Please provide:
-        1. A helpful, educational response
-        2. 2-3 suggestions for further learning
-        3. 2-3 follow-up questions to encourage deeper thinking
+        Provide a response that:
+        1. Starts with a real-world scenario or problem that illustrates the concept
+        2. Explains the concept thoroughly using the scenario
+        3. Guides the student through problem-solving steps
+        4. Connects the concept to broader applications
+        
+        Then include:
+        - 2-3 practical exercises or scenarios for practice
+        - 2-3 thought-provoking questions that encourage critical thinking and application
+        
+        IMPORTANT: Respond ONLY with a valid JSON object, no explanation, no markdown, no extra text, no code block. Do not include any text before or after the JSON. Do not use markdown formatting. Do not say 'Here is the JSON'.
         
         Format the response as a JSON object:
         {
-          "response": "Your educational response",
-          "suggestions": ["Suggestion 1", "Suggestion 2", "Suggestion 3"],
-          "followUpQuestions": ["Question 1", "Question 2", "Question 3"]
+          "response": "Your detailed, scenario-based response...",
+          "suggestions": [
+            "Practice scenario/exercise 1",
+            "Practice scenario/exercise 2",
+            "Practice scenario/exercise 3"
+          ],
+          "followUpQuestions": [
+            "Critical thinking question 1",
+            "Application question 2",
+            "Analysis question 3"
+          ]
         }
         
-        Be encouraging, clear, and educational. Adapt your response to the student's level and the context provided.
+        Be engaging, clear, and focus on real-world applications. Adapt your response to the student's level shown in the conversation history.
       `;
 
       const model = getGeminiModel();
-      const result = await model.generateContent(prompt);
+      const result = await generateWithRetry(model, prompt);
       const response = await result.response;
       const text = response.text();
 
-      // Extract JSON from the response
-      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      // Robustly strip code block markers if present
+      let cleanedText = text.trim();
+      if (cleanedText.startsWith("```json")) {
+        cleanedText = cleanedText.replace(/^```json/, "");
+      }
+      if (cleanedText.startsWith("```")) {
+        cleanedText = cleanedText.replace(/^```/, "");
+      }
+      if (cleanedText.endsWith("```")) {
+        cleanedText = cleanedText.replace(/```$/, "");
+      }
+      cleanedText = cleanedText.trim();
+
+      // Try to extract JSON from the response
+      const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]);
+        try {
+          return safeParseGeminiJSON(jsonMatch[0]);
+        } catch (err) {
+          // fall through to fallback below
+        }
       }
 
-      throw new Error("Failed to parse tutor response");
+      // Fallback: return the raw text as the response, with a flag
+      return {
+        response: text,
+        suggestions: [],
+        followUpQuestions: [],
+        fallback: true,
+      };
     } catch (error) {
       console.error("Error in tutor conversation:", error);
+      if (error && error.userMessage) {
+        throw new Error(error.userMessage);
+      }
       throw new Error("Failed to get tutor response");
     }
   }
@@ -255,14 +417,14 @@ export class GeminiService {
       `;
 
       const model = getGeminiModel();
-      const result = await model.generateContent(prompt);
+      const result = await generateWithRetry(model, prompt);
       const response = await result.response;
       const text = response.text();
 
       // Extract JSON from the response
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]);
+        return safeParseGeminiJSON(jsonMatch[0]);
       }
 
       throw new Error("Failed to parse evaluation response");
@@ -304,20 +466,48 @@ export class GeminiService {
       `;
 
       const model = getGeminiModel();
-      const result = await model.generateContent(prompt);
+      const result = await generateWithRetry(model, prompt);
       const response = await result.response;
       const text = response.text();
 
       // Extract JSON from the response
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]);
+        return safeParseGeminiJSON(jsonMatch[0]);
       }
 
       throw new Error("Failed to parse content analysis response");
     } catch (error) {
       console.error("Error analyzing content:", error);
       throw new Error("Failed to analyze content");
+    }
+  }
+
+  // Pre-extract main subject and themes from a content preview
+  static async preExtractSubjectThemes(
+    content: string
+  ): Promise<{ subject: string; themes: string[] }> {
+    try {
+      const prompt = `
+        Analyze the following preview of a study document and identify:
+        1. The main subject (in 1 phrase)
+        2. 2-4 core themes or topics covered
+        Return as JSON: { "subject": "...", "themes": ["...", "..."] }
+        Preview:
+        ${content}
+      `;
+      const model = getGeminiModel();
+      const result = await generateWithRetry(model, prompt);
+      const response = await result.response;
+      const text = response.text();
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        return safeParseGeminiJSON(jsonMatch[0]);
+      }
+      throw new Error("Failed to parse subject/themes extraction response");
+    } catch (error) {
+      console.error("Error extracting subject/themes:", error);
+      throw new Error("Failed to extract subject/themes");
     }
   }
 }

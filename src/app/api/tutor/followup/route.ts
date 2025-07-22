@@ -8,24 +8,27 @@ export async function POST(request: NextRequest) {
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
+  const body = await request.json();
+  const { question, context, conversationHistory = [] } = body;
+  if (!question || !context) {
+    return NextResponse.json(
+      { error: "Missing question or context." },
+      { status: 400 }
+    );
+  }
   try {
-    const { content, subject } = await request.json();
-
-    if (!content) {
-      return NextResponse.json(
-        {
-          error: "Content is required",
-          userMessage: "Please provide document content to process.",
-          details: null,
-        },
-        { status: 400 }
-      );
+    const aiRes = await GeminiService.tutorConversation(
+      question,
+      context,
+      conversationHistory
+    );
+    if (aiRes.fallback) {
+      return NextResponse.json({
+        ...aiRes,
+        warning: "AI returned a plain answer instead of structured JSON.",
+      });
     }
-
-    const topics = await GeminiService.processContent(content, subject || "");
-
-    return NextResponse.json({ topics });
+    return NextResponse.json(aiRes);
   } catch (error: any) {
     let message = "Unknown error";
     let details = null;
@@ -45,10 +48,10 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    console.error("Error processing content:", error);
+    console.error("Error in tutor followup:", error);
     return NextResponse.json(
       {
-        error: "Failed to process content",
+        error: "Failed to get tutor followup response",
         userMessage: message,
         details,
       },

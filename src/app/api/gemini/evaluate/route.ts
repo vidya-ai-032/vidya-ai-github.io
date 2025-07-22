@@ -24,10 +24,16 @@ export async function POST(request: NextRequest) {
     );
 
     return NextResponse.json({ evaluation });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error evaluating answer:", error);
     return NextResponse.json(
-      { error: "Failed to evaluate answer" },
+      {
+        error: "Failed to evaluate answer",
+        userMessage:
+          error?.message ||
+          "Could not evaluate your answer. Please try again later.",
+        details: error?.stack || String(error),
+      },
       { status: 500 }
     );
   }

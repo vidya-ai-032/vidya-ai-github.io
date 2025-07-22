@@ -2,4 +2,57 @@
 
 body {
   font-family: Arial, Helvetica, sans-serif;
+  background: #fff;
+  color: #000;
+}
+
+.bg-blue {
+  background: #2563eb !important; /* Tailwind blue-600 */
+  color: #fff !important;
+}
+
+.text-blue {
+  color: #2563eb !important;
+}
+
+/* Universal hover effect for clickable items: swap bg/text, bold, pointer */
+.hover-flip {
+  transition: background 0.2s, color 0.2s, font-weight 0.2s;
+}
+.bg-blue.hover-flip:hover {
+  background: #fff !important;
+  color: #2563eb !important;
+  font-weight: bolder;
+  cursor: pointer;
+}
+.bg-white.hover-flip:hover,
+.hover-flip:hover {
+  background: #2563eb !important;
+  color: #fff !important;
+  font-weight: bolder;
+  cursor: pointer;
+}
+.text-blue.hover-flip:hover {
+  color: #fff !important;
+  background: #2563eb !important;
+  font-weight: bolder;
+  cursor: pointer;
+}
+
+@media print {
+  nav,
+  .sidebar,
+  .header,
+  .footer,
+  button,
+  .print-hide,
+  .print-controls {
+    display: none !important;
+  }
+  .print-content {
+    display: block !important;
+  }
+  body {
+    background: #fff !important;
+  }
 }

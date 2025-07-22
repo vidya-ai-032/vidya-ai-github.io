@@ -1,5 +1,5 @@
 import NextAuth from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
+import { authOptions } from "../authOptions";
 declare module "next-auth" {
   interface Session {
     user: {
@@ -12,43 +12,6 @@ declare module "next-auth" {
   }
 }
 
-const handler = NextAuth({
-  providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
-  ],
-  secret: process.env.NEXTAUTH_SECRET,
-  callbacks: {
-    async signIn({ account }) {
-      // Allow sign in if it's a Google account
-      if (account?.provider === "google") {
-        return true;
-      }
-      return false;
-    },
-    async session({ session, token }) {
-      // Add user ID to session
-      if (session.user) {
-        session.user.id = token.sub as string;
-      }
-      return session;
-    },
-    async jwt({ token, user, account }) {
-      // Add user data to JWT token
-      if (account && user) {
-        token.id = user.id;
-      }
-      return token;
-    },
-  },
-  pages: {
-    signIn: "/auth/login",
-  },
-  session: {
-    strategy: "jwt",
-  },
-});
+const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };

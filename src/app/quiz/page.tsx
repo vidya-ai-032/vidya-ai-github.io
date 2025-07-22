@@ -33,8 +33,24 @@ interface Topic {
   isUploaded: boolean;
 }
 
+interface QuizHistory {
+  date: string;
+  questions: QuizQuestion[];
+  answers: Record<number, string>;
+  aiFeedback: Record<
+    number,
+    { score: number; feedback: string; suggestions: string[] }
+  >;
+  totalScore: number;
+  maxScore: number;
+  correctCount: number;
+  topicLabel: string;
+  userEmail: string;
+  content?: string; // Add this field
+}
+
 export default function QuizPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [quiz, setQuiz] = useState<{ questions: QuizQuestion[] } | null>(null);
   const [answers, setAnswers] = useState<{ [idx: number]: string }>({});
   const [loading, setLoading] = useState(false);
@@ -241,7 +257,7 @@ export default function QuizPage() {
   }, [submitted, saveResults]);
 
   // Load quiz history
-  const [quizHistory, setQuizHistory] = useState<QuizResult[]>([]);
+  const [quizHistory, setQuizHistory] = useState<QuizHistory[]>([]);
   useEffect(() => {
     if (!session?.user?.email) return;
     const data = localStorage.getItem(
@@ -276,6 +292,38 @@ export default function QuizPage() {
     setAiFeedback({});
     setSubmitted(false);
     setError(null);
+  };
+
+  const handleAttemptQuiz = async (topic: string, content: string) => {
+    setLoading(true);
+    setError(null);
+    setQuiz(null);
+    setAnswers({});
+    setSubmitted(false);
+    setAiFeedback({});
+    try {
+      const res = await fetch("/api/gemini/generate-quiz", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: content,
+          subject: topic,
+          quizType: "mcq",
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.quiz)
+        throw new Error(data.error || "Failed to generate quiz");
+      setQuiz(data.quiz);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("An unknown error occurred.");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Export quiz result as CSV
@@ -403,7 +451,7 @@ export default function QuizPage() {
     }
   }
 
-  const handleDeleteQuiz = (quizToDelete: QuizResult) => {
+  const handleDeleteQuiz = (quizToDelete: QuizHistory) => {
     if (!session?.user?.email) return;
     const key = `vidyaai_quiz_history_${session.user.email}`;
     const updated = quizHistory.filter(
@@ -417,6 +465,22 @@ export default function QuizPage() {
     localStorage.setItem(key, JSON.stringify(updated));
   };
 
+  if (status !== "authenticated") {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="bg-white p-8 rounded shadow text-center">
+          <h2 className="text-xl font-bold mb-4">Sign in required</h2>
+          <button
+            className="bg-blue-600 text-white px-4 py-2 rounded"
+            onClick={() => signIn("google", { prompt: "select_account" })}
+          >
+            Sign In with Google
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className="flex flex-col items-center justify-center min-h-screen px-2 sm:px-4"
@@ -429,25 +493,6 @@ export default function QuizPage() {
       >
         Quiz
       </h1>
-      {!session?.user?.email && (
-        <div
-          className="w-full max-w-xl mx-auto bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-yellow-900 text-center mb-6"
-          role="alert"
-          aria-live="polite"
-        >
-          <div className="font-bold mb-2">
-            Please log in to access quiz history and analytics.
-          </div>
-          <button
-            onClick={() => signIn()}
-            className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-lg text-base font-semibold hover:shadow-xl transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
-            aria-label="Log in"
-            tabIndex={0}
-          >
-            Log In
-          </button>
-        </div>
-      )}
       {session?.user?.email && (
         <>
           {/* Analytics section */}
@@ -556,6 +601,16 @@ export default function QuizPage() {
                       <span className="text-sm text-blue-700 font-semibold">
                         Score: {q.totalScore}
                       </span>
+                      <button
+                        className="px-3 py-1 rounded bg-gradient-to-r from-green-600 to-blue-600 text-white text-xs font-semibold hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                        aria-label={`Attempt new quiz on ${q.topicLabel}`}
+                        tabIndex={0}
+                        onClick={() =>
+                          handleAttemptQuiz(q.topicLabel, q.content || "")
+                        }
+                      >
+                        Attempt Quiz
+                      </button>
                       <button
                         className="px-3 py-1 rounded bg-gradient-to-r from-blue-600 to-purple-600 text-white text-xs font-semibold hover:shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
                         aria-label={`Review quiz on ${q.topicLabel}`}
