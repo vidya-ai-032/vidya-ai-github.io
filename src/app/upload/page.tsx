@@ -426,6 +426,11 @@ function SubtopicCard({
   const handleGeminiLoop = async (
     promptText = "What doubts or questions do you have about this topic? Just speak your question or say 'stop' to end."
   ) => {
+    // Compose a human-like prompt for Gemini
+    const humanLikePrompt = `You are a friendly, engaging human teacher explaining this topic to a 5th-grade student. Use simple, clear language, and speak as if you are talking directly to the student. Be warm, encouraging, and conversational. Use examples, analogies, and ask occasional questions to keep the student interested. Avoid sounding robotic or repetitive. Make your explanation lively and easy to follow, as if you were speaking out loud.\n\nTopic: ${
+      topic.summary
+    }\nKey Points: ${(topic.keyPoints || []).join(", ")}`;
+
     await speakAndMaybeListen(promptText, async (transcript: string) => {
       if (transcript.toLowerCase().includes("stop")) {
         await speakAndMaybeListen(
@@ -443,7 +448,7 @@ function SubtopicCard({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            question: `Answer innovatively, non-repetitively, and as a human teacher to a grade 5 student: ${transcript}`,
+            question: humanLikePrompt + "\n\nStudent's question: " + transcript,
             context,
             conversationHistory: [],
           }),
@@ -692,7 +697,7 @@ function SubtopicCard({
       {/* Action Buttons */}
       <div className="mt-auto grid grid-cols-3 gap-2 print-hide">
         <button
-          className={`px-3 py-2 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 text-sm flex items-center justify-center ${
+          className={`px-3 py-2 bg-blue-400 text-white rounded-lg font-semibold hover:bg-blue-500 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 text-sm flex items-center justify-center ${
             loadingButton === "quiz" ? "opacity-50 cursor-not-allowed" : ""
           }`}
           aria-label={`Generate quiz for ${topic.title}`}
@@ -745,7 +750,7 @@ function SubtopicCard({
         </button>
 
         <button
-          className={`px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 text-sm flex items-center justify-center ${
+          className={`px-3 py-2 bg-blue-400 text-white rounded-lg font-semibold hover:bg-blue-500 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 text-sm flex items-center justify-center ${
             loadingButton === "qa" ? "opacity-50 cursor-not-allowed" : ""
           }`}
           aria-label={`Generate Q&A for ${topic.title}`}
@@ -858,7 +863,7 @@ function SubtopicCard({
         </button>
 
         <button
-          className={`px-3 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg font-semibold hover:shadow-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 text-sm flex items-center justify-center ${
+          className={`px-3 py-2 bg-blue-400 text-white rounded-lg font-semibold hover:bg-blue-500 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 text-sm flex items-center justify-center ${
             loadingButton === "teach" ? "opacity-50 cursor-not-allowed" : ""
           }`}
           aria-label={`Teach me this topic: ${topic.title}`}
@@ -1305,6 +1310,9 @@ export default function UploadPage() {
   const [quizScore, setQuizScore] = useState<Record<string, number>>({});
   const [qaContent, setQaContent] = useState<Record<string, any>>({});
   const [qaExpanded, setQaExpanded] = useState<Record<string, boolean>>({});
+  const [subtopicDisplayMode, setSubtopicDisplayMode] = useState<
+    "card" | "block"
+  >("card");
 
   // Handle answer selection for subtopic quiz
   const handleQuizAnswer = (subtopic: string, idx: number, value: string) => {
@@ -1728,11 +1736,39 @@ export default function UploadPage() {
               <h2 className="text-xl font-bold text-gray-900">
                 Extracted Topics
               </h2>
-              <PrintButton contentId="subtopics-section" />
+              <div className="flex gap-2 items-center">
+                <button
+                  className={`px-3 py-1 rounded font-semibold border text-sm transition-colors ${
+                    subtopicDisplayMode === "card"
+                      ? "bg-blue-600 text-white border-blue-600"
+                      : "bg-white text-blue-600 border-blue-600"
+                  }`}
+                  onClick={() => setSubtopicDisplayMode("card")}
+                  aria-label="Card View"
+                >
+                  Card View
+                </button>
+                <button
+                  className={`px-3 py-1 rounded font-semibold border text-sm transition-colors ${
+                    subtopicDisplayMode === "block"
+                      ? "bg-blue-600 text-white border-blue-600"
+                      : "bg-white text-blue-600 border-blue-600"
+                  }`}
+                  onClick={() => setSubtopicDisplayMode("block")}
+                  aria-label="Block View"
+                >
+                  Block View
+                </button>
+                <PrintButton contentId="subtopics-section" />
+              </div>
             </div>
             <div
               id="subtopics-section"
-              className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3 print-content"
+              className={
+                subtopicDisplayMode === "card"
+                  ? "grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3 print-content"
+                  : "flex flex-col gap-6 print-content"
+              }
             >
               {extractedTopics.map((t, i) => (
                 <React.Fragment key={i}>

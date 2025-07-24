@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     try {
       const fileBuffer = await fs.readFile(filePath);
       // Use dynamic import for pdfjs-dist (avoid Next.js SSR issues)
-      const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.js");
+      const pdfjsLib = await import("pdfjs-dist/build/pdf.mjs");
       pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
       const pdf = await pdfjsLib.getDocument({ data: fileBuffer }).promise;
       let pdfText = "";
