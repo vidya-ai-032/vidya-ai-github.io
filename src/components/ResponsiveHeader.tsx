@@ -9,7 +9,7 @@ const navLinks = [
   { href: "/upload", label: "Upload" },
   { href: "/tutor", label: "Tutor" },
   { href: "/quiz", label: "Quiz" },
-  { href: "/qa", label: "Q&A" },
+  { href: "/subjective-qa", label: "Subjective QA" },
   { href: "/dashboard/settings", label: "Settings" },
 ];
 

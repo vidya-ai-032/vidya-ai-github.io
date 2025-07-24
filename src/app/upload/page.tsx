@@ -9,6 +9,7 @@ import { segmentTextToSubtopics, Subtopic } from "@/lib/segmentText";
 import { GeminiService } from "@/lib/gemini";
 import React from "react";
 import { FaTrash } from "react-icons/fa";
+import VoiceLoopDemo from "./VoiceLoopDemo";
 
 const getSubtopicsKey = (email, docName) =>
   `vidyaai_subtopics_${email}_${docName}`;
@@ -258,7 +259,9 @@ function SubtopicCard({
 }) {
   const { data: session } = useSession();
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loadingButton, setLoadingButton] = useState<
+    null | "quiz" | "qa" | "teach"
+  >(null);
   const [teachData, setTeachData] = useState<any>(null);
   const [teachError, setTeachError] = useState<string | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -269,71 +272,223 @@ function SubtopicCard({
   const [qa, setQa] = useState<any | null>(null);
   const [qaLoading, setQaLoading] = useState(false);
   const subtopicKey = topic.title;
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+  const interruptedRef = useRef(false);
+  const [conversation, setConversation] = useState([]); // For displaying conversation history
 
   // Only allow one expanded card at a time
   useEffect(() => {
     setIsExpanded(expandedCardId === topic.title);
   }, [expandedCardId, topic.title]);
 
-  const handleTeachMeThis = async () => {
-    setIsLoading(true);
-    setTeachError(null);
-    setTeachData(null);
-    if (setExpandedCardId) setExpandedCardId(topic.title);
-    try {
-      // Use GeminiService.tutorConversation or a direct API call
-      const context =
-        topic.summary +
-        (topic.keyPoints?.length ? "\n" + topic.keyPoints.join(" ") : "");
-      const userMessage =
-        "Explain this topic in detail, suggest further related topics, and provide model questions.";
-      const res = await fetch("/api/tutor/followup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          question: userMessage,
-          context,
-          conversationHistory: [],
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to get explanation");
-      setTeachData(data);
-      // Start speech synthesis
-      speakText(data.response);
-    } catch (err: any) {
-      setTeachError(err.message || "Unknown error");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const getPreferredVoice = () =>
+    new Promise<SpeechSynthesisVoice | null>((resolve) => {
+      let voices = window.speechSynthesis.getVoices();
+      if (voices.length) {
+        const preferred =
+          voices.find(
+            (v) =>
+              v.lang.startsWith("en") &&
+              v.name.toLowerCase().includes("natural")
+          ) ||
+          voices.find(
+            (v) =>
+              v.lang.startsWith("en") && v.name.toLowerCase().includes("google")
+          ) ||
+          voices.find((v) => v.lang.startsWith("en"));
+        resolve(preferred || null);
+      } else {
+        window.speechSynthesis.onvoiceschanged = () => {
+          voices = window.speechSynthesis.getVoices();
+          const preferred =
+            voices.find(
+              (v) =>
+                v.lang.startsWith("en") &&
+                v.name.toLowerCase().includes("natural")
+            ) ||
+            voices.find(
+              (v) =>
+                v.lang.startsWith("en") &&
+                v.name.toLowerCase().includes("google")
+            ) ||
+            voices.find((v) => v.lang.startsWith("en"));
+          resolve(preferred || null);
+        };
+      }
+    });
 
-  const speakText = (text: string) => {
-    if (window.speechSynthesis.speaking) {
-      window.speechSynthesis.cancel();
-    }
+  const speak = async (text: string, onEnd?: () => void) => {
+    if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
+    const preferred = await getPreferredVoice();
     const utter = new window.SpeechSynthesisUtterance(text);
-    utterRef.current = utter;
-    utter.onend = () => setIsSpeaking(false);
-    utter.onpause = () => setIsPaused(true);
-    utter.onresume = () => setIsPaused(false);
+    if (preferred) utter.voice = preferred;
+    utter.rate = 1;
+    utter.pitch = 1.1;
+    utter.onend = () => {
+      setIsSpeaking(false);
+      if (onEnd) onEnd();
+    };
+    utter.onstart = () => setIsSpeaking(true);
+    utter.onerror = () => setIsSpeaking(false);
     setIsSpeaking(true);
-    setIsPaused(false);
     window.speechSynthesis.speak(utter);
   };
 
-  const handlePause = () => {
-    window.speechSynthesis.pause();
-    setIsPaused(true);
+  const isChrome =
+    typeof navigator !== "undefined" &&
+    /Chrome/.test(navigator.userAgent) &&
+    /Google Inc/.test(navigator.vendor);
+
+  const speakAndMaybeListen = async (
+    text: string,
+    onUserInput: (transcript: string) => void
+  ) => {
+    if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
+    const preferred = await getPreferredVoice();
+    const utter = new window.SpeechSynthesisUtterance(text);
+    if (preferred) utter.voice = preferred;
+    utter.rate = 1;
+    utter.pitch = 1.1;
+
+    let recognition: any = null;
+    if (!isChrome) {
+      // Non-Chrome: Start recognition in parallel
+      recognition = new (window as any).webkitSpeechRecognition();
+      recognition.lang = "en-US";
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+      recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript.trim();
+        window.speechSynthesis.cancel();
+        recognition.stop();
+        setIsListening(false);
+        if (onUserInput) onUserInput(transcript);
+      };
+      recognition.onerror = () => {
+        recognition.stop();
+        setIsListening(false);
+      };
+      recognition.onend = () => setIsListening(false);
+      recognition.start();
+      recognitionRef.current = recognition;
+      setIsListening(true);
+    }
+
+    utter.onend = () => {
+      setIsSpeaking(false);
+      if (isChrome) {
+        // Chrome: Start recognition only after speech ends
+        const chromeRecognition = new (window as any).webkitSpeechRecognition();
+        chromeRecognition.lang = "en-US";
+        chromeRecognition.interimResults = false;
+        chromeRecognition.maxAlternatives = 1;
+        chromeRecognition.onresult = (event: any) => {
+          const transcript = event.results[0][0].transcript.trim();
+          chromeRecognition.stop();
+          setIsListening(false);
+          if (onUserInput) onUserInput(transcript);
+        };
+        chromeRecognition.onerror = () => {
+          chromeRecognition.stop();
+          setIsListening(false);
+        };
+        chromeRecognition.onend = () => setIsListening(false);
+        chromeRecognition.start();
+        recognitionRef.current = chromeRecognition;
+        setIsListening(true);
+      }
+      if (!isChrome) {
+        // Non-Chrome: recognition already running, just clean up
+        if (recognition) {
+          recognition.stop();
+          setIsListening(false);
+        }
+      }
+    };
+    utter.onstart = () => setIsSpeaking(true);
+    utter.onerror = () => setIsSpeaking(false);
+    setIsSpeaking(true);
+    window.speechSynthesis.speak(utter);
   };
-  const handleResume = () => {
-    window.speechSynthesis.resume();
-    setIsPaused(false);
-  };
+
   const handleStop = () => {
     window.speechSynthesis.cancel();
     setIsSpeaking(false);
-    setIsPaused(false);
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+      setIsListening(false);
+    }
+    interruptedRef.current = true;
+  };
+
+  const handleGeminiLoop = async (
+    promptText = "What doubts or questions do you have about this topic? Just speak your question or say 'stop' to end."
+  ) => {
+    await speakAndMaybeListen(promptText, async (transcript: string) => {
+      if (transcript.toLowerCase().includes("stop")) {
+        await speakAndMaybeListen(
+          "Okay, I'll stop now. If you have more questions, just let me know! Goodbye!",
+          () => {}
+        );
+        return;
+      }
+      setLoadingButton("teach");
+      try {
+        const context =
+          topic.summary +
+          (topic.keyPoints?.length ? "\n" + topic.keyPoints.join(" ") : "");
+        const res = await fetch("/api/tutor/followup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            question: `Answer innovatively, non-repetitively, and as a human teacher to a grade 5 student: ${transcript}`,
+            context,
+            conversationHistory: [],
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to get explanation");
+        setTeachData(data);
+        setConversation((prev) => [
+          ...prev,
+          { role: "user", text: transcript },
+          { role: "gemini", text: data.response },
+        ]);
+        // After Gemini responds, loop again
+        await speakAndMaybeListen(data.response, () =>
+          handleGeminiLoop(
+            "Do you have any more questions or doubts? Just speak your question or say 'stop' to end."
+          )
+        );
+      } catch (err: any) {
+        setTeachError(err.message || "Unknown error");
+      } finally {
+        setLoadingButton(null);
+      }
+    });
+  };
+
+  const handleTeachMeThis = async () => {
+    setLoadingButton("teach");
+    setTeachError(null);
+    setTeachData(null);
+    setConversation([]);
+    if (setExpandedCardId) setExpandedCardId(topic.title);
+    interruptedRef.current = false;
+    await handleGeminiLoop();
+    setLoadingButton(null);
+  };
+
+  const handleTalkToGemini = async () => {
+    setLoadingButton("teach");
+    setTeachError(null);
+    setTeachData(null);
+    setConversation([]);
+    interruptedRef.current = false;
+    await handleGeminiLoop();
+    setLoadingButton(null);
   };
 
   // Add a function to generate answers for all questions in the Q&A card
@@ -365,6 +520,8 @@ function SubtopicCard({
     // Save Q&A to localStorage per subtopic
     const qaKey = `vidyaai_qa_${session.user.email}_${topic.title}`;
     localStorage.setItem(qaKey, JSON.stringify(qaWithAnswers));
+    // Dispatch event for real-time update
+    window.dispatchEvent(new Event("qa-history-updated"));
     setQaLoading(false);
   };
 
@@ -381,14 +538,14 @@ function SubtopicCard({
     if (!canPrintQa(qaObj)) return;
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
-    let html = `<html><head><title>Q&A</title><style>
+    let html = `<html><head><title>Subjective QA</title><style>
       body { font-family: Arial, sans-serif; margin: 40px; }
       h1 { font-size: 1.5em; margin-bottom: 0.5em; }
       .question { margin-bottom: 1.5em; }
       .question-title { font-weight: bold; margin-bottom: 0.3em; }
       .answer { margin-left: 1em; color: #333; }
     </style></head><body>`;
-    html += `<h1>Q&A: ${subtopicKey}</h1>`;
+    html += `<h1>Subjective QA: ${subtopicKey}</h1>`;
     html += `<div>Date: ${new Date().toLocaleString()}</div>`;
     html += "<hr />";
     qaObj.questions.forEach((q: any, idx: number) => {
@@ -404,6 +561,75 @@ function SubtopicCard({
     printWindow.document.close();
     printWindow.focus();
     printWindow.print();
+  };
+
+  // Add a function to start voice recognition for follow-up questions
+  const handleStartListening = () => {
+    if (!("webkitSpeechRecognition" in window)) {
+      alert("Speech recognition not supported in this browser.");
+      return;
+    }
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+      setIsListening(false);
+      return;
+    }
+    const recognition = new (window as any).webkitSpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onresult = async (event: any) => {
+      const transcript = event.results[0][0].transcript.trim();
+      setIsListening(false);
+      if (transcript.toLowerCase().includes("stop")) {
+        handleStop();
+        return;
+      }
+      // Send follow-up question to Gemini
+      setLoadingButton("teach");
+      try {
+        const context =
+          topic.summary +
+          (topic.keyPoints?.length ? "\n" + topic.keyPoints.join(" ") : "");
+        const userMessage = transcript;
+        const res = await fetch("/api/tutor/followup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            question: userMessage,
+            context,
+            conversationHistory: [],
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to get explanation");
+        setTeachData(data);
+        // Speak the new response and prompt again
+        speakAndMaybeListen(data.response, () =>
+          handleGeminiLoop(
+            "Do you have any more questions or doubts? Just speak your question or say 'stop' to end."
+          )
+        );
+      } catch (err: any) {
+        setTeachError(err.message || "Unknown error");
+      } finally {
+        setLoadingButton(null);
+      }
+    };
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+    recognition.start();
+    recognitionRef.current = recognition;
+    setIsListening(true);
+  };
+
+  // Pause speech synthesis and set isPaused
+  const pauseTTS = () => {
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      window.speechSynthesis.pause();
+      setIsPaused(true);
+    }
   };
 
   return (
@@ -467,13 +693,13 @@ function SubtopicCard({
       <div className="mt-auto grid grid-cols-3 gap-2 print-hide">
         <button
           className={`px-3 py-2 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 text-sm flex items-center justify-center ${
-            isLoading ? "opacity-50 cursor-not-allowed" : ""
+            loadingButton === "quiz" ? "opacity-50 cursor-not-allowed" : ""
           }`}
           aria-label={`Generate quiz for ${topic.title}`}
-          disabled={isLoading}
+          disabled={loadingButton === "quiz"}
           onClick={async () => {
             if (!session?.user?.email) return;
-            setIsLoading(true);
+            setLoadingButton("quiz");
             try {
               const content =
                 topic.summary + "\n" + (topic.keyPoints || []).join(" ");
@@ -504,11 +730,11 @@ function SubtopicCard({
               console.error("Error generating quiz:", error);
               alert("Failed to generate quiz. Please try again.");
             } finally {
-              setIsLoading(false);
+              setLoadingButton(null);
             }
           }}
         >
-          {isLoading ? (
+          {loadingButton === "quiz" ? (
             <div className="flex items-center">
               <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
               Loading...
@@ -520,13 +746,13 @@ function SubtopicCard({
 
         <button
           className={`px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 text-sm flex items-center justify-center ${
-            isLoading ? "opacity-50 cursor-not-allowed" : ""
+            loadingButton === "qa" ? "opacity-50 cursor-not-allowed" : ""
           }`}
           aria-label={`Generate Q&A for ${topic.title}`}
-          disabled={isLoading}
+          disabled={loadingButton === "qa"}
           onClick={async () => {
             if (!session?.user?.email) return;
-            setIsLoading(true);
+            setLoadingButton("qa");
             try {
               const content =
                 topic.summary + "\n" + (topic.keyPoints || []).join(" ");
@@ -583,6 +809,33 @@ function SubtopicCard({
                 // Save Q&A to localStorage per subtopic
                 const qaKey = `vidyaai_qa_${session.user.email}_${topic.title}`;
                 localStorage.setItem(qaKey, JSON.stringify(qaWithAnswers));
+                // Also update QA history array for real-time sync with QA page
+                const historyKey = `vidyaai_qa_history_${session.user.email}`;
+                let historyArr = [];
+                try {
+                  const existing = localStorage.getItem(historyKey);
+                  if (existing) historyArr = JSON.parse(existing);
+                } catch {}
+                // Avoid duplicates by topic and date
+                const newHistoryEntry = {
+                  questions: qaWithAnswers.questions,
+                  date: new Date().toISOString(),
+                  topicLabel: topic.title,
+                  userEmail: session.user.email,
+                };
+                const alreadyExists = historyArr.some(
+                  (q) =>
+                    q.topicLabel === newHistoryEntry.topicLabel &&
+                    q.date === newHistoryEntry.date
+                );
+                if (!alreadyExists) {
+                  historyArr.unshift(newHistoryEntry);
+                  localStorage.setItem(
+                    historyKey,
+                    JSON.stringify(historyArr.slice(0, 50))
+                  );
+                }
+                window.dispatchEvent(new Event("qa-history-updated"));
                 setQaLoading(false);
               }
             } catch (error) {
@@ -590,11 +843,11 @@ function SubtopicCard({
               alert("Failed to generate Q&A. Please try again.");
               setQaLoading(false);
             } finally {
-              setIsLoading(false);
+              setLoadingButton(null);
             }
           }}
         >
-          {isLoading ? (
+          {loadingButton === "qa" ? (
             <div className="flex items-center">
               <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
               Loading...
@@ -606,13 +859,13 @@ function SubtopicCard({
 
         <button
           className={`px-3 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg font-semibold hover:shadow-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-500 text-sm flex items-center justify-center ${
-            isLoading ? "opacity-50 cursor-not-allowed" : ""
+            loadingButton === "teach" ? "opacity-50 cursor-not-allowed" : ""
           }`}
           aria-label={`Teach me this topic: ${topic.title}`}
-          disabled={isLoading}
+          disabled={loadingButton === "teach"}
           onClick={handleTeachMeThis}
         >
-          {isLoading ? (
+          {loadingButton === "teach" ? (
             <div className="flex items-center">
               <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
               Loading...
@@ -765,18 +1018,45 @@ function SubtopicCard({
                 </button>
                 <button
                   className="bg-yellow-500 text-white px-3 py-1 rounded"
-                  onClick={handlePause}
+                  onClick={pauseTTS}
                   disabled={!isSpeaking || isPaused}
                 >
                   Pause
                 </button>
+                {isSpeaking && (
+                  <button
+                    className="ml-2 px-3 py-1 bg-red-500 text-white rounded text-xs font-semibold"
+                    onClick={handleStop}
+                    type="button"
+                  >
+                    Stop
+                  </button>
+                )}
+                {isListening && (
+                  <span className="ml-2 px-3 py-1 bg-yellow-300 text-gray-900 rounded text-xs font-semibold animate-pulse">
+                    Listening...
+                  </span>
+                )}
                 <button
-                  className="bg-red-600 text-white px-3 py-1 rounded"
-                  onClick={handleStop}
-                  disabled={!isSpeaking}
+                  className="ml-2 px-3 py-1 bg-blue-500 text-white rounded text-xs font-semibold"
+                  onClick={handleTalkToGemini}
+                  type="button"
                 >
-                  Stop
+                  Talk to Gemini
                 </button>
+              </div>
+              <div className="mt-2">
+                {conversation.map((msg, idx) => (
+                  <div
+                    key={idx}
+                    className={
+                      msg.role === "user" ? "text-blue-700" : "text-green-700"
+                    }
+                  >
+                    <strong>{msg.role === "user" ? "You" : "Gemini"}:</strong>{" "}
+                    {msg.text}
+                  </div>
+                ))}
               </div>
             </>
           )}

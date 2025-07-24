@@ -10,7 +10,7 @@ const navLinks = [
   { href: "/tutor", label: "Tutor", icon: "🎓" },
   { href: "/quiz", label: "Quiz", icon: "📝" },
   { href: "/library", label: "Library", icon: "📚" },
-  { href: "/qa", label: "Q&A", icon: "❓" },
+  { href: "/subjective-qa", label: "Subjective QA", icon: "❓" },
   { href: "/dashboard/settings", label: "Settings", icon: "⚙️" },
 ];
 

@@ -416,7 +416,7 @@ export default function LibraryPage() {
                           {expanded[doc.name]?.qa && docQA[doc.name] && (
                             <div className="mt-2 bg-white border border-pink-200 rounded-lg p-4 mb-2">
                               <div className="font-semibold text-pink-800 mb-2 text-base sm:text-lg break-words">
-                                Q&A
+                                Subjective QA
                               </div>
                               {/* Render Q&A questions here, e.g. as a list */}
                               {docQA[doc.name].questions &&

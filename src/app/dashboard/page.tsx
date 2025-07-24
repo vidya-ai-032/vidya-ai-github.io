@@ -41,10 +41,10 @@ const quickActions = [
     color: "bg-yellow-100 text-yellow-700",
   },
   {
-    title: "Ask a Question",
+    title: "Subjective QA",
     description: "Get answers from the AI",
     icon: "❓",
-    href: "/qa",
+    href: "/subjective-qa",
     color: "bg-purple-100 text-purple-700",
   },
 ];
@@ -389,7 +389,7 @@ export default function DashboardPage() {
             <RecommendationItem
               title="Challenge Yourself"
               description="Try a subjective Q&A on 'Cellular Respiration' to deepen your knowledge."
-              href="/qa"
+              href="/subjective-qa"
               icon="🧠"
             />
           </div>
