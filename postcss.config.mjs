@@ -2,9 +2,9 @@ const config = {
   plugins: {
     "@tailwindcss/postcss": {
       // Disable lightningcss to avoid native module issues
-      lightningcss: false
-    }
-  }
+      lightningcss: false,
+    },
+  },
 };
 
 export default config;
