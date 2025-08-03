@@ -1,5 +1,5 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+// Plain JavaScript configuration file - no TypeScript
+module.exports = {
   images: {
     domains: ["lh3.googleusercontent.com"],
   },
@@ -17,5 +17,3 @@ const nextConfig = {
   },
   swcMinify: true,
 };
-
-module.exports = nextConfig;

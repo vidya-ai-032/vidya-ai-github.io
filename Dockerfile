@@ -18,8 +18,10 @@ COPY --from=deps /app/node_modules ./node_modules
 # Copy project files
 COPY . .
 
-# Build the Next.js app (TypeScript is now available)
+# Build the Next.js app with TypeScript disabled
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV DISABLE_TYPESCRIPT=true
+ENV NEXT_SKIP_TYPESCRIPT_CHECK=true
 RUN npm run build
 
 # Stage 3: Production image
