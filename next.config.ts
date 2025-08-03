@@ -1,5 +1,6 @@
-// This is a JavaScript file and should not be processed as TypeScript
-const config = {
+import type { NextConfig } from "next";
+
+const config: NextConfig = {
   images: {
     domains: ["lh3.googleusercontent.com"],
   },
@@ -21,4 +22,4 @@ const config = {
   swcMinify: true,
 };
 
-module.exports = config;
+export default config;

@@ -34,7 +34,7 @@ RUN npm ci --only=production
 # Copy built application from builder stage
 COPY --from=builder /usr/src/app/.next ./.next
 COPY --from=builder /usr/src/app/public ./public
-COPY --from=builder /usr/src/app/next.config.js ./
+COPY --from=builder /usr/src/app/next.config.ts ./
 
 # Set environment variables
 ENV NODE_ENV=production
