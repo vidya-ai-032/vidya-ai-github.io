@@ -1,5 +1,5 @@
 # Builder stage: install deps and build
-FROM node:20.19.4-slim AS builder
+FROM node:20.19.4 AS builder
 WORKDIR /usr/src/app
 COPY package*.json ./
 RUN npm install
