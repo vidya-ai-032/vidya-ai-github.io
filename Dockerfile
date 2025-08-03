@@ -2,6 +2,9 @@
 FROM node:20.19.4 AS builder
 WORKDIR /usr/src/app
 
+# Install TypeScript globally first
+RUN npm install -g typescript@5
+
 # Copy package files and TypeScript config
 COPY package*.json ./
 COPY tsconfig.json ./
@@ -10,8 +13,9 @@ COPY tsconfig.json ./
 ENV NODE_ENV=development
 RUN npm install
 
-# Verify TypeScript is installed
+# Verify TypeScript is installed and working
 RUN npx tsc --version
+RUN which tsc
 
 # Copy source code
 COPY . .
