@@ -1,13 +1,13 @@
 steps:
-  # Install dependencies
+  # Install dependencies with dev dependencies included
   - name: "gcr.io/cloud-builders/npm"
-    args: ["install"]
+    args: ["install", "--include=dev"]
     env:
       - "NODE_ENV=development"
 
-  # Install TypeScript globally
+  # Verify TypeScript is installed
   - name: "gcr.io/cloud-builders/npm"
-    args: ["install", "-g", "typescript@5"]
+    args: ["list", "typescript"]
 
   # Build the Next.js application
   - name: "gcr.io/cloud-builders/npm"
