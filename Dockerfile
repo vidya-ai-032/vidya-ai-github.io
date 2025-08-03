@@ -1,15 +1,10 @@
 # Build stage
-FROM node:20.19.4-slim AS builder
+FROM node:20.19.4 AS builder
 WORKDIR /usr/src/app
 
-# Install TypeScript globally first
-RUN npm install -g typescript@5
-
-# Copy package files
+# Install dependencies first (including TypeScript)
 COPY package*.json ./
 COPY tsconfig.json ./
-
-# Install all dependencies
 RUN npm install
 
 # Copy source

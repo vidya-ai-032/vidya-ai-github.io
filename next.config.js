@@ -1,6 +1,4 @@
-// @ts-check
-
-/** @type {import('next').NextConfig} */
+// This is a JavaScript file and should not be processed as TypeScript
 const config = {
   images: {
     domains: ["lh3.googleusercontent.com"],
@@ -18,8 +16,6 @@ const config = {
     ignoreDuringBuilds: true,
   },
   output: "standalone",
-  // Disable type checking during build (we'll do it separately)
-  skipTypeschecking: true,
   // Ensure we're using the correct Node.js version
   experimental: {
     serverMinification: true,
