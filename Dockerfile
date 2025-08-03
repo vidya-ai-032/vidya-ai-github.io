@@ -7,8 +7,9 @@ WORKDIR /usr/src/app
 # Copy package.json and package-lock.json (if available)
 COPY package*.json ./
 
-# Install all dependencies (including devDependencies)
-RUN npm install
+
+# Install all dependencies (including devDependencies) and ensure TypeScript is present
+RUN npm install && npm install --save-dev typescript
 
 # Copy the rest of the application code
 COPY . .
