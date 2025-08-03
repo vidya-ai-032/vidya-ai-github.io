@@ -1,13 +1,14 @@
-import type { NextConfig } from "next";
-
-const nextConfig: NextConfig = {
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   images: {
     domains: ["lh3.googleusercontent.com"],
   },
   typescript: {
+    // Temporarily disable TypeScript checking during build
     ignoreBuildErrors: true,
   },
   eslint: {
+    // Temporarily disable ESLint during build
     ignoreDuringBuilds: true,
   },
   output: "standalone",
@@ -17,4 +18,4 @@ const nextConfig: NextConfig = {
   swcMinify: true,
 };
 
-export default nextConfig;
+module.exports = nextConfig;

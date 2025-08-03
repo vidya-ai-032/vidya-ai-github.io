@@ -38,7 +38,7 @@ RUN addgroup --system --gid 1001 nodejs \
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/next.config.ts ./
+COPY --from=builder /app/next.config.js ./
 
 # Install only production dependencies
 COPY --from=builder /app/package.json ./
