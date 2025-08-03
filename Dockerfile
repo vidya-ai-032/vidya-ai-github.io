@@ -4,26 +4,12 @@ FROM node:20.19.4-slim
 # Set the working directory
 WORKDIR /usr/src/app
 
-# Copy package.json and package-lock.json (if available)
-COPY package*.json ./
-
-
-
-# Install all dependencies (including devDependencies)
-RUN npm install
-
-
-# Copy the rest of the application code
+# Copy the built application
 COPY . .
 
-
-
-# Build the Next.js app
-RUN npm run build
-
-
-# Remove devDependencies to reduce image size
-RUN npm prune --production
+# Install only production dependencies
+ENV NODE_ENV=production
+RUN npm ci --only=production
 
 # Expose the port the app runs on (Cloud Run expects $PORT)
 EXPOSE 8080
