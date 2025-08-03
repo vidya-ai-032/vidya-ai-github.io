@@ -1,52 +1,32 @@
-# Build stage
-FROM node:20.19.4 AS builder
-WORKDIR /usr/src/app
-
-# Install TypeScript globally first
-RUN npm install -g typescript@5
-
-# Copy package files and TypeScript config
-COPY package*.json ./
-COPY tsconfig.json ./
-
-# Install all dependencies (including dev dependencies for TypeScript)
-ENV NODE_ENV=development
+# 1. Install all dependencies, including devDependencies
+FROM node:20.19.4 AS deps
+WORKDIR /app
+COPY package.json package-lock.json ./
+# Install both dependencies and devDependencies for build
 RUN npm install
 
-# Verify TypeScript is installed and working
-RUN npx tsc --version
-RUN which tsc
-
-# Copy source code
+# 2. Build the Next.js app
+FROM node:20.19.4 AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-
-# Build the application
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
-# Production stage
+# 3. Create the production image
 FROM node:20.19.4-slim AS runner
-WORKDIR /usr/src/app
-
-# Copy package files
-COPY package*.json ./
-
-# Install only production dependencies
-RUN npm ci --only=production
-
-# Copy built application from builder stage
-COPY --from=builder /usr/src/app/.next ./.next
-COPY --from=builder /usr/src/app/public ./public
-COPY --from=builder /usr/src/app/next.config.ts ./
-
-# Set environment variables
+WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=8080
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Expose port
-EXPOSE 8080
+# Copy only the production output and necessary files
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/next.config.ts ./
+COPY --from=builder /app/package.json ./
 
-# Start the application
-CMD ["npm", "start"]
+# Install only runtime dependencies
+RUN npm ci --omit=dev
+
+EXPOSE 8080
+CMD ["npm", "run", "start"]
