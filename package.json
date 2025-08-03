@@ -2,7 +2,6 @@
   "name": "vidya-ai",
   "version": "0.1.0",
   "private": true,
-  "main": "index.js",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
