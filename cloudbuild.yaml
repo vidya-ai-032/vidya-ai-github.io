@@ -1,7 +1,15 @@
 steps:
   # Step 1: Build and push the Docker image (using multi-stage build in Dockerfile)
   - name: "gcr.io/cloud-builders/docker"
-    args: ["build", "-t", "gcr.io/$PROJECT_ID/vidya-ai", "."]
+    args:
+      [
+        "build",
+        "--build-arg",
+        "NEXT_DISABLE_LIGHTNINGCSS=1",
+        "-t",
+        "gcr.io/$PROJECT_ID/vidya-ai",
+        ".",
+      ]
 
   # Step 2: Push the Docker image
   - name: "gcr.io/cloud-builders/docker"

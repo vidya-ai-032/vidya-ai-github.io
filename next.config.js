@@ -15,4 +15,6 @@ module.exports = {
   experimental: {
     serverMinification: true,
   },
+  // Explicitly set minification options for Next.js 15
+  // Removing swcMinify since it's deprecated
 };
