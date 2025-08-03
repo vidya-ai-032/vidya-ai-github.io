@@ -2,9 +2,12 @@
 FROM node:20.19.4 AS builder
 WORKDIR /usr/src/app
 
-# Install dependencies first (including TypeScript)
+# Copy package files and TypeScript config
 COPY package*.json ./
 COPY tsconfig.json ./
+
+# Install all dependencies (including dev dependencies)
+ENV NODE_ENV=development
 RUN npm install
 
 # Copy source
