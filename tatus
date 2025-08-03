@@ -15,3 +15,8 @@
 83ccb08 Dockerfile updated[33ma312a8d[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Ensure typescript is in devDependencies and lockfile is up to date
 [33mb5dd0f6[m dockerfile updated
 [33ma61d134[m dockerfile updated
+[33mcommit 3b2d5a30cd44995ef038e78eacc7b051b5829ad8[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m)[m
+Author: Vidya AI <vidyaai032@gmail.com>
+Date:   Mon Aug 4 01:07:07 2025 +0530
+
+    Fix Docker build configuration for Google Cloud Build
