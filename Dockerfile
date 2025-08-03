@@ -7,6 +7,8 @@ COPY package.json package-lock.json ./
 
 # Install ALL dependencies (including TypeScript and other devDependencies)
 RUN npm ci
+# Explicitly install TypeScript globally to ensure it's available
+RUN npm install -g typescript@5.8.3
 
 # Stage 2: Build the application
 FROM node:20.19.4-slim AS builder
@@ -18,10 +20,10 @@ COPY --from=deps /app/node_modules ./node_modules
 # Copy project files
 COPY . .
 
-# Build the Next.js app with TypeScript disabled
+# Build the Next.js app with TypeScript available
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV DISABLE_TYPESCRIPT=true
-ENV NEXT_SKIP_TYPESCRIPT_CHECK=true
+# Ensure TypeScript is in PATH
+ENV PATH /app/node_modules/.bin:$PATH
 RUN npm run build
 
 # Stage 3: Production image
