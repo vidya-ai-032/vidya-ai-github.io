@@ -8,10 +8,10 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 
 
-# Install all dependencies (including devDependencies) for build
-RUN npm ci
-# Ensure TypeScript is available
-RUN npm install -g typescript
+# Install dependencies including devDependencies
+RUN npm install
+# Install TypeScript globally
+RUN npm install -g typescript@5
 
 
 # Copy the rest of the application code

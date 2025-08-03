@@ -1,4 +1,9 @@
 steps:
+  # Pull the Node.js 20.19.4 image explicitly
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["pull", "node:20.19.4-slim"]
+
+  # Build the application
   - name: "gcr.io/cloud-builders/docker"
     args:
       [
