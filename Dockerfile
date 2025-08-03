@@ -10,6 +10,8 @@ COPY package*.json ./
 
 # Install all dependencies (including devDependencies) for build
 RUN npm ci
+# Ensure TypeScript is available
+RUN npm install -g typescript
 
 
 # Copy the rest of the application code
