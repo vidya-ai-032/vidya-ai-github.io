@@ -25,4 +25,5 @@ COPY --from=builder /usr/src/app/next.config.js ./next.config.js
 COPY --from=builder /usr/src/app/package.json ./package.json
 EXPOSE 8080
 ENV PORT=8080
+RUN npm rebuild lightningcss
 CMD ["npm", "start"]
