@@ -10,6 +10,11 @@ steps:
   - name: node:20.19.4-slim
     entrypoint: npm
     args: ["install", "-g", "typescript@5"]
+    
+  # Verify TypeScript installation
+  - name: node:20.19.4-slim
+    entrypoint: bash
+    args: ["-c", "which tsc && tsc --version"]
 
   # Build the application
   - name: node:20.19.4-slim

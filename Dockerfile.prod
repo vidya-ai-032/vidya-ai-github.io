@@ -13,6 +13,7 @@ RUN npm ci --omit=dev
 COPY .next ./.next
 COPY public ./public
 COPY next.config.js ./
+COPY next.config.ts ./
 
 # Expose port and set environment variables
 EXPOSE 8080
