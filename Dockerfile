@@ -1,39 +1,24 @@
-# 1. Base image
-FROM node:20.19.4-alpine AS base
-RUN apk add --no-cache libc6-compat
-WORKDIR /app
+# Stage 1: Install everything (prod + dev)
+FROM node:20.19.4-slim AS deps
+WORKDIR /usr/src/app
+COPY package*.json ./
+RUN npm ci                   # installs devDependencies, including typescript
 
-# 2. Install all dependencies (prod + dev) for build
-FROM base AS deps
-COPY package.json package-lock.json ./
-RUN npm ci
-
-# 3. Build the Next.js app
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+# Stage 2: Build with TS present
+FROM node:20.19.4-slim AS builder
+WORKDIR /usr/src/app
+COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY . .
-RUN npm run build
+RUN npm run build            # now finds typescript for next.config.ts
 
-# 4. Runtime image – only production assets & deps
-FROM node:20.19.4-alpine AS runner
-WORKDIR /app
+# Stage 3: Prod image with only runtime deps
+FROM node:20.19.4-slim AS runner
+WORKDIR /usr/src/app
 ENV NODE_ENV=production
-
-# Create non-root user
-RUN addgroup --system --gid 1001 nodejs \
- && adduser --system --uid 1001 nextjs
-
-# Copy built output
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/package.json ./
-
-# Install only production dependencies
+COPY --from=builder /usr/src/app/public ./public
+COPY --from=builder /usr/src/app/.next ./.next
+COPY --from=builder /usr/src/app/next.config.js ./
+COPY --from=builder /usr/src/app/package.json ./
 RUN npm ci --omit=dev
-
-USER nextjs
 EXPOSE 8080
-ENV PORT=8080 HOSTNAME="0.0.0.0"
-CMD ["node","server.js"]
+CMD ["npm","run","start"]
