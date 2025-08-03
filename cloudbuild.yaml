@@ -1,9 +1,21 @@
 steps:
   - name: "gcr.io/cloud-builders/docker"
-    args: ["build", "-t", "gcr.io/$PROJECT_ID/vidya-ai", "."]
+    args:
+      [
+        "build",
+        "--no-cache",
+        "--build-arg",
+        "NODE_ENV=production",
+        "-t",
+        "gcr.io/$PROJECT_ID/vidya-ai",
+        ".",
+      ]
   - name: "gcr.io/cloud-builders/docker"
     args: ["push", "gcr.io/$PROJECT_ID/vidya-ai"]
+
 options:
   logging: CLOUD_LOGGING_ONLY
+  machineType: "E2_HIGHCPU_8"
+
 images:
   - "gcr.io/$PROJECT_ID/vidya-ai"

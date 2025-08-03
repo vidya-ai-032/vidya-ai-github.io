@@ -9,7 +9,8 @@
     "lint": "next lint"
   },
   "engines": {
-    "node": ">=20.0.0"
+    "node": "20.19.4",
+    "npm": ">=10.0.0"
   },
   "dependencies": {
     "@auth/core": "^0.34.2",

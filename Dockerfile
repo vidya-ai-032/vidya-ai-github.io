@@ -1,5 +1,5 @@
 # Use the official Node.js 20 image as the base image
-FROM node:20-slim
+FROM node:20.19.4-slim
 
 # Set the working directory
 WORKDIR /usr/src/app
@@ -8,13 +8,13 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 
 # Install all dependencies (including devDependencies) for build
-RUN npm ci --only=production=false
+RUN npm ci
 
 # Copy the rest of the application code
 COPY . .
 
-# Build the Next.js app with explicit error handling
-RUN npm run build || (echo "Build failed" && exit 1)
+# Build the Next.js app
+RUN npm run build
 
 # Remove devDependencies to reduce image size
 RUN npm prune --production

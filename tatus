@@ -1,0 +1,5 @@
+[33m5d7df14[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Fix build issues: remove next.config.ts, update Dockerfile to use Node.js 20, and fix dependency installation
+[33m199ab83[m updated Dockerfile, next.config.js, next.config.ts, package.json
+[33m83ccb08[m Dockerfile updated
+[33m8af3126[m updated Dockerfile
+[33m5f5bfa2[m updated dockerfile
