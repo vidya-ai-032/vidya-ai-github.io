@@ -8,32 +8,32 @@ steps:
         # Print Node.js and npm versions
         echo "Node.js version: $(node -v)"
         echo "npm version: $(npm -v)"
-        
+
         # Install all dependencies (including dev dependencies)
         echo "Installing all dependencies..."
         npm install
-        
+
         # Install TypeScript globally
         echo "Installing TypeScript globally..."
         npm install -g typescript
-        
+
         # Verify TypeScript is installed
         echo "TypeScript version: $(tsc --version)"
-        
+
         # Create a simple next.config.js if it doesn't exist
         if [ ! -f next.config.js ]; then
           echo "Creating next.config.js..."
           echo 'module.exports = { output: "standalone" }' > next.config.js
         fi
-        
+
         # Build the Next.js app
         echo "Building Next.js app..."
         NEXT_TELEMETRY_DISABLED=1 npm run build
-        
+
         # Create a production Docker image
         echo "Building Docker image..."
         docker build -t gcr.io/$PROJECT_ID/vidya-ai -f Dockerfile.prod .
-        
+
         # Push the Docker image
         echo "Pushing Docker image..."
         docker push gcr.io/$PROJECT_ID/vidya-ai
