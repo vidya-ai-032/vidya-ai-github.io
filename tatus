@@ -12,4 +12,6 @@
 7bf79b4 changes made to dockerfile and package.json
 5d7df14 Fix build issues: remove next.config.ts, update Dockerfile to use Node.js 20, and fix dependency installation
 199ab83 updated Dockerfile, next.config.js, next.config.ts, package.json
-83ccb08 Dockerfile updated
+83ccb08 Dockerfile updated[33ma312a8d[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Ensure typescript is in devDependencies and lockfile is up to date
+[33mb5dd0f6[m dockerfile updated
+[33ma61d134[m dockerfile updated
