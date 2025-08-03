@@ -5,4 +5,6 @@ export default {
     extend: {},
   },
   plugins: [],
+  // Disable lightningcss to avoid native module issues
+  lightningcss: false,
 };

@@ -15,5 +15,5 @@ module.exports = {
   experimental: {
     serverMinification: true,
   },
-  swcMinify: true,
+
 };
