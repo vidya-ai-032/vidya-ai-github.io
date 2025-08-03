@@ -6,11 +6,14 @@ WORKDIR /usr/src/app
 COPY package*.json ./
 COPY tsconfig.json ./
 
-# Install all dependencies (including dev dependencies)
+# Install all dependencies (including dev dependencies for TypeScript)
 ENV NODE_ENV=development
 RUN npm install
 
-# Copy source
+# Verify TypeScript is installed
+RUN npx tsc --version
+
+# Copy source code
 COPY . .
 
 # Build the application
@@ -22,8 +25,10 @@ RUN npm run build
 FROM node:20.19.4-slim AS runner
 WORKDIR /usr/src/app
 
-# Copy package files and install production dependencies
+# Copy package files
 COPY package*.json ./
+
+# Install only production dependencies
 RUN npm ci --only=production
 
 # Copy built application from builder stage
@@ -31,12 +36,12 @@ COPY --from=builder /usr/src/app/.next ./.next
 COPY --from=builder /usr/src/app/public ./public
 COPY --from=builder /usr/src/app/next.config.js ./
 
-# Set runtime environment variables
+# Set environment variables
 ENV NODE_ENV=production
 ENV PORT=8080
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Expose the port
+# Expose port
 EXPOSE 8080
 
 # Start the application
