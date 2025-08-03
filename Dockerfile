@@ -7,15 +7,18 @@ WORKDIR /usr/src/app
 # Copy package.json and package-lock.json (if available)
 COPY package*.json ./
 
+
 # Install all dependencies (including devDependencies) for build
 RUN npm ci
-RUN npm install typescript
+
 
 # Copy the rest of the application code
 COPY . .
 
+
 # Build the Next.js app
 RUN npm run build
+
 
 # Remove devDependencies to reduce image size
 RUN npm prune --production
