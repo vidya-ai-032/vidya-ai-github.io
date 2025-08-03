@@ -1,15 +1,35 @@
 steps:
-  # Build and push the Docker image (using multi-stage build)
+  # Install dependencies and build directly
+  - name: node:20.19.4-slim
+    entrypoint: npm
+    args: ['install']
+    env:
+      - 'NODE_ENV=development'
+  
+  # Install TypeScript globally
+  - name: node:20.19.4-slim
+    entrypoint: npm
+    args: ['install', '-g', 'typescript@5']
+  
+  # Build the application
+  - name: node:20.19.4-slim
+    entrypoint: npm
+    args: ['run', 'build']
+    env:
+      - 'NODE_ENV=production'
+      - 'NEXT_TELEMETRY_DISABLED=1'
+  
+  # Build the Docker image
   - name: "gcr.io/cloud-builders/docker"
-    args: ["build", "-t", "gcr.io/$PROJECT_ID/vidya-ai", "."]
-
+    args: ["build", "-t", "gcr.io/$PROJECT_ID/vidya-ai", "-f", "Dockerfile.prod", "."]
+  
   # Push the Docker image
   - name: "gcr.io/cloud-builders/docker"
     args: ["push", "gcr.io/$PROJECT_ID/vidya-ai"]
 
 # Specify logging configuration
 options:
-  logging: CLOUD_LOGGING_ONLY # Only write logs to Cloud Logging
+  logging: CLOUD_LOGGING_ONLY
   machineType: "E2_HIGHCPU_8"
 
 # Specify the logs bucket
