@@ -1,24 +1,26 @@
-# Production image only - build happens in Cloud Build
+# Simple production image for Next.js
 FROM node:20.19.4-slim
-WORKDIR /usr/src/app
+
+# Set working directory
+WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
 
 # Install only production dependencies
 ENV NODE_ENV=production
-RUN npm ci --omit=dev
+RUN npm ci --only=production
 
 # Copy built application
 COPY .next ./.next
 COPY public ./public
 COPY next.config.js ./
-COPY next.config.ts ./
 
 # Expose port and set environment variables
 EXPOSE 8080
 ENV PORT=8080
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
 
 # Start the application
 CMD ["npm", "start"]
