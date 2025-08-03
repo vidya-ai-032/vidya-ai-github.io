@@ -18,7 +18,7 @@ WORKDIR /usr/src/app
 ENV NODE_ENV=production
 COPY --from=builder /usr/src/app/public ./public
 COPY --from=builder /usr/src/app/.next ./.next
-COPY --from=builder /usr/src/app/next.config.js ./
+COPY --from=builder /usr/src/app/next.config.ts ./
 COPY --from=builder /usr/src/app/package.json ./
 RUN npm ci --omit=dev
 EXPOSE 8080
