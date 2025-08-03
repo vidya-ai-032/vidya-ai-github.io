@@ -1,50 +1,16 @@
 steps:
-  # Use a single step with a shell script to handle the build
-  - name: node:20.19.4
-    entrypoint: bash
-    args:
-      - -c
-      - |
-        # Print Node.js and npm versions
-        echo "Node.js version: $(node -v)"
-        echo "npm version: $(npm -v)"
+  # Step 1: Build and push the Docker image (using multi-stage build in Dockerfile)
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["build", "-t", "gcr.io/$PROJECT_ID/vidya-ai", "."]
 
-        # Install all dependencies (including dev dependencies)
-        echo "Installing all dependencies..."
-        npm install
-
-        # Install TypeScript globally
-        echo "Installing TypeScript globally..."
-        npm install -g typescript
-
-        # Verify TypeScript is installed
-        echo "TypeScript version: $(tsc --version)"
-
-        # Create a simple next.config.js if it doesn't exist
-        if [ ! -f next.config.js ]; then
-          echo "Creating next.config.js..."
-          echo 'module.exports = { output: "standalone" }' > next.config.js
-        fi
-
-        # Build the Next.js app
-        echo "Building Next.js app..."
-        NEXT_TELEMETRY_DISABLED=1 npm run build
-
-        # Create a production Docker image
-        echo "Building Docker image..."
-        docker build -t gcr.io/$PROJECT_ID/vidya-ai -f Dockerfile.prod .
-
-        # Push the Docker image
-        echo "Pushing Docker image..."
-        docker push gcr.io/$PROJECT_ID/vidya-ai
+  # Step 2: Push the Docker image
+  - name: "gcr.io/cloud-builders/docker"
+    args: ["push", "gcr.io/$PROJECT_ID/vidya-ai"]
 
 # Specify logging configuration
 options:
   logging: CLOUD_LOGGING_ONLY
   machineType: "E2_HIGHCPU_8"
-
-# Specify the logs bucket
-logsBucket: "gs://vidya-ai-build-logs-20240803"
 
 images:
   - "gcr.io/$PROJECT_ID/vidya-ai"

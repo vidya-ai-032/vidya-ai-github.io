@@ -1,6 +1,6 @@
 # Builder stage: install deps and build
 FROM node:20.19.4 AS builder
-WORKDIR /usr/src/app
+WORKDIR /app
 
 # Install build dependencies for native modules
 RUN apt-get update && apt-get install -y \
@@ -8,22 +8,55 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
+# Copy package files
 COPY package*.json ./
-# Force rebuild of native modules
-RUN npm install --force
+
+# Install all dependencies (including dev dependencies)
+RUN npm ci
+
+# Copy the rest of the code
 COPY . .
+
+# Set environment variables for build
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Build the Next.js app
 RUN npm run build
-RUN npm prune --production
 
 # Runner stage: production image
 FROM node:20.19.4-slim AS runner
-WORKDIR /usr/src/app
-COPY --from=builder /usr/src/app/.next ./.next
-COPY --from=builder /usr/src/app/public ./public
-COPY --from=builder /usr/src/app/next.config.js ./next.config.js
-COPY --from=builder /usr/src/app/package.json ./package.json
-COPY --from=builder /usr/src/app/package-lock.json ./package-lock.json
-EXPOSE 8080
+WORKDIR /app
+
+# Set to production environment
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=8080
+ENV HOSTNAME="0.0.0.0"
+
+# Create a non-root user for security
+RUN addgroup --system --gid 1001 nodejs \
+    && adduser --system --uid 1001 nextjs
+
+# Copy package files
+COPY --from=builder /app/package.json ./
+COPY --from=builder /app/package-lock.json ./
+
+# Install only production dependencies
 RUN npm ci --omit=dev
+
+# Copy built application
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/next.config.js ./
+
+# Set proper permissions
+RUN chown -R nextjs:nodejs /app
+
+# Use non-root user
+USER nextjs
+
+# Expose port
+EXPOSE 8080
+
+# Start the application
 CMD ["npm", "start"]
