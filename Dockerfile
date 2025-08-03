@@ -17,8 +17,6 @@ COPY . .
 # Build the Next.js app
 RUN npm run build
 
-# Remove devDependencies for a smaller image
-RUN npm prune --production
 
 # Expose the port the app runs on (Cloud Run expects $PORT)
 EXPOSE 8080
