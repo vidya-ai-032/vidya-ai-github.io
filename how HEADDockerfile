@@ -1,0 +1,5 @@
+[33ma61d134[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m dockerfile updated
+[33m7812bd1[m dockerfile updated
+[33ma0d2304[m deleted next.config.ts and replaced it with a new file named next.config.js
+[33m2ca303a[m dockerfile updated
+[33m76558ce[m Dockerfile: Added global TypeScript installation at the very beginning Added verification steps to ensure TypeScript is available Added which tsc to verify the TypeScript binary location next.config.ts: Simplified the configuration Removed unnecessary comments and options Used standard Next.js configuration structure next-env.d.ts: Created the TypeScript declaration file that Next.js expects This provides proper type definitions for Next.js These changes should resolve the TypeScript module not found error because: TypeScript is installed globally before any other operations The configuration is properly structured as a TypeScript file All necessary TypeScript declaration files are present.

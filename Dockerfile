@@ -7,6 +7,7 @@ RUN npm ci                   # installs devDependencies, including typescript
 # Stage 2: Build with TS present
 FROM node:20.19.4-slim AS builder
 WORKDIR /usr/src/app
+COPY package*.json ./
 COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY . .
 RUN npm run build            # now finds typescript for next.config.ts
