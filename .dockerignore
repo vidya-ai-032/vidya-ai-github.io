@@ -1,16 +1,50 @@
+# Exclude node_modules to prevent conflicts
 node_modules
-npm-debug.log
 .next
 .git
-.gitignore
-README.md
+.github
+
+# Exclude uploads directory which might be large
+uploads/*
+!uploads/sample.pdf
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables
+.env*
+!.env.example
+
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Test coverage
+coverage
+.nyc_output
+
+# Development files
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
-.vercel
-test-results
-playwright-report
-*.log
+
+# Cache directories
+.npm
+.eslintcache
+
+# OS generated files
 .DS_Store
-Thumbs.db 
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

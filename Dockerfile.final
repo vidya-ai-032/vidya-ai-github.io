@@ -1,0 +1,73 @@
+# Multi-stage build for Next.js 15 with proper platform specification
+FROM --platform=linux/amd64 node:20.19.4-alpine AS deps
+
+# Install dependencies for native modules
+RUN apk add --no-cache libc6-compat
+
+WORKDIR /app
+
+# Copy package files
+COPY package.json package-lock.json* ./
+
+# Install dependencies with platform-specific binaries
+RUN npm ci --only=production --ignore-scripts && \
+    npm install lightningcss-linux-x64-gnu --save-optional
+
+# Install dev dependencies needed for build
+RUN npm install next@15.4.2 react@19.1.0 react-dom@19.1.0 @tailwindcss/postcss tailwindcss --save-dev
+
+# Builder stage
+FROM --platform=linux/amd64 node:20.19.4-alpine AS builder
+
+WORKDIR /app
+
+# Copy dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+COPY package.json package-lock.json* ./
+
+# Copy source code
+COPY . .
+
+# Set environment variables for Next.js 15
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
+ENV CSS_TRANSFORMER_WASM=1
+
+# Create simplified config files to avoid LightningCSS issues
+RUN echo "module.exports = {content: ['./src/**/*.{js,ts,jsx,tsx}'], theme: {extend: {}}};" > tailwind.config.js
+RUN echo "module.exports = {plugins: {'tailwindcss': {}}};" > postcss.config.js
+
+# Build the application with Next.js 15
+RUN npx next build
+
+# Production stage
+FROM --platform=linux/amd64 node:20.19.4-alpine AS runner
+
+WORKDIR /app
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=8080
+ENV HOSTNAME="0.0.0.0"
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+# Copy built application
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
+# Set permissions
+RUN chown -R nextjs:nodejs /app
+
+# Switch to non-root user
+USER nextjs
+
+# Expose port
+EXPOSE 8080
+
+# Start the application
+CMD ["node", "server.js"] 

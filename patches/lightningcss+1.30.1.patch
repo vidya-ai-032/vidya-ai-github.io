@@ -1,0 +1,29 @@
+diff --git a/node_modules/lightningcss/node/index.js b/node_modules/lightningcss/node/index.js
+index 011d04b..83d6910 100644
+--- a/node_modules/lightningcss/node/index.js
++++ b/node_modules/lightningcss/node/index.js
+@@ -13,13 +13,22 @@ if (process.platform === 'linux') {
+   parts.push('msvc');
+ }
+ 
+-if (process.env.CSS_TRANSFORMER_WASM) {
++if (process.env.CSS_TRANSFORMER_WASM || process.env.NEXT_DISABLE_LIGHTNINGCSS) {
++  // Force use WASM version instead of native
+   module.exports = require(`../pkg`);
+ } else {
+   try {
++    // Try to load external package
+     module.exports = require(`lightningcss-${parts.join('-')}`);
+   } catch (err) {
+-    module.exports = require(`../lightningcss.${parts.join('-')}.node`);
++    try {
++      // Try to load native module
++      module.exports = require(`../lightningcss.${parts.join('-')}.node`);
++    } catch (err2) {
++      // Fallback to WASM
++      console.warn('LightningCSS native module not found, using WASM instead');
++      module.exports = require(`../pkg`);
++    }
+   }
+ }
+ 

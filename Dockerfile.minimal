@@ -1,0 +1,62 @@
+# Minimal Next.js 15 Docker build that avoids lightningcss issues
+FROM --platform=linux/amd64 node:20.19.4-alpine AS builder
+
+WORKDIR /app
+
+# Install only essential dependencies
+RUN apk add --no-cache libc6-compat
+
+# Copy package files
+COPY package.json package-lock.json ./
+
+# Install only the core Next.js dependencies
+RUN npm install next@15.4.2 react@19.1.0 react-dom@19.1.0 --save --no-optional
+
+# Copy source code
+COPY . .
+
+# Create a minimal tailwind config that doesn't use lightningcss
+RUN echo "module.exports = {content: ['./src/**/*.{js,ts,jsx,tsx}'], theme: {extend: {}}};" > tailwind.config.js
+
+# Create a minimal postcss config
+RUN echo "module.exports = {plugins: {}};" > postcss.config.js
+
+# Set environment variables
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
+ENV CSS_TRANSFORMER_WASM=1
+
+# Build without Tailwind CSS processing
+RUN npx next build
+
+# Production stage
+FROM --platform=linux/amd64 node:20.19.4-alpine AS runner
+
+WORKDIR /app
+
+# Set environment variables
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=8080
+ENV HOSTNAME="0.0.0.0"
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+# Copy built application
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
+# Set permissions
+RUN chown -R nextjs:nodejs /app
+
+# Switch to non-root user
+USER nextjs
+
+# Expose port
+EXPOSE 8080
+
+# Start the application
+CMD ["node", "server.js"]

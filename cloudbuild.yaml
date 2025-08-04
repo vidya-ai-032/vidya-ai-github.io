@@ -1,11 +1,13 @@
 steps:
-  # Step 1: Build and push the Docker image (using multi-stage build in Dockerfile)
+  # Step 1: Build the Docker image using minimal configuration
   - name: "gcr.io/cloud-builders/docker"
     args:
       [
         "build",
-        "--build-arg",
-        "NEXT_DISABLE_LIGHTNINGCSS=1",
+        "--platform",
+        "linux/amd64",
+        "-f",
+        "Dockerfile.minimal",
         "-t",
         "gcr.io/$PROJECT_ID/vidya-ai",
         ".",

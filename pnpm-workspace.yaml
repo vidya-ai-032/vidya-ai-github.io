@@ -1,0 +1,5 @@
+packages:
+  - "."
+
+resolutions:
+  lightningcss: "npm:lightningcss-stub@1.0.0"

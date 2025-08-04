@@ -1,5 +1,5 @@
 # Builder stage: install deps and build
-FROM node:20.19.4 AS builder
+FROM --platform=linux/amd64 node:20.19.4 AS builder
 WORKDIR /app
 
 # Accept build arguments
@@ -13,24 +13,26 @@ RUN apt-get update && apt-get install -y \
     make \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy package files
-COPY package*.json ./
-
-# Install all dependencies (including dev dependencies)
-RUN npm ci --build-from-source
-
-# Copy the rest of the code
-COPY . .
-
 # Set environment variables for build
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NEXT_DISABLE_LIGHTNINGCSS=1
+ENV NODE_OPTIONS="--max_old_space_size=4096"
+ENV CSS_TRANSFORMER_WASM=1
+
+# Copy package files and npm config
+COPY package*.json ./
+
+# Use npm install instead of npm ci to refresh the lockfile
+RUN npm install --no-optional
+
+# Copy the rest of the code
+COPY . .
 
 # Build the Next.js app with LightningCSS disabled
 RUN npm run build:docker
 
 # Runner stage: production image
-FROM node:20.19.4-slim AS runner
+FROM --platform=linux/amd64 node:20.19.4-slim AS runner
 WORKDIR /app
 
 # Set to production environment

@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
-    "build:docker": "NEXT_DISABLE_LIGHTNINGCSS=1 next build",
+    "build:docker": "CSS_TRANSFORMER_WASM=1 NODE_OPTIONS='--max_old_space_size=4096' NODE_ENV=production NEXT_CONFIG_FILE=next.config.docker.js next build",
     "start": "next start",
     "lint": "next lint"
   },
@@ -42,10 +42,14 @@
     "eslint": "^9",
     "eslint-config-next": "15.4.2",
     "jest": "^30.0.4",
+    "patch-package": "^8.0.0",
     "playwright": "^1.54.1",
     "supertest": "^7.1.3",
     "tailwindcss": "^4",
     "ts-jest": "^29.4.0",
     "typescript": "^5.8.3"
+  },
+  "optionalDependencies": {
+    "lightningcss-linux-x64-gnu": "^1.30.1"
   }
 }

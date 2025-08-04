@@ -1,0 +1,77 @@
+# Use a specific Node.js LTS version
+FROM node:20.19.4-slim AS deps
+
+# Set working directory
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    python3 \
+    build-essential \
+    g++ \
+    make \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set environment variables to disable LightningCSS
+ENV NEXT_DISABLE_LIGHTNINGCSS=1
+ENV CSS_TRANSFORMER_WASM=1
+ENV NODE_OPTIONS="--max_old_space_size=4096"
+
+# Copy package.json and package-lock.json
+COPY package.json package-lock.json ./
+
+# Install production dependencies (no devDependencies)
+RUN npm install --omit=dev --no-optional --ignore-scripts
+
+# Install development dependencies required for building
+RUN npm install --no-save @tailwindcss/postcss tailwindcss
+
+# Build stage
+FROM deps AS builder
+
+# Set working directory
+WORKDIR /app
+
+# Copy source code
+COPY . .
+
+# Create a simplified tailwind config
+RUN echo "/** @type {import('tailwindcss').Config} */\nmodule.exports = {darkMode: 'class',content: ['./src/**/*.{js,ts,jsx,tsx}'],theme: {extend: {}},plugins: [],};" > tailwind.config.js
+
+# Create a simplified postcss config
+RUN echo "module.exports = {plugins: {'tailwindcss': {}}};" > postcss.config.js
+
+# Build the application with Next.js
+RUN NEXT_DISABLE_LIGHTNINGCSS=1 CSS_TRANSFORMER_WASM=1 npx next build
+
+# Runtime stage - create a clean image for running
+FROM node:20.19.4-slim AS runner
+
+WORKDIR /app
+
+# Set to production environment
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=8080
+ENV HOSTNAME="0.0.0.0"
+
+# Create a non-root user for security
+RUN addgroup --system --gid 1001 nodejs \
+    && adduser --system --uid 1001 nextjs
+
+# Copy built application
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
+# Set proper permissions
+RUN chown -R nextjs:nodejs /app
+
+# Use non-root user
+USER nextjs
+
+# Expose port
+EXPOSE 8080
+
+# Start the application
+CMD ["node", "server.js"]

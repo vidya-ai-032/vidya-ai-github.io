@@ -1,0 +1,51 @@
+# Use the official Node.js image with platform specification
+FROM --platform=linux/amd64 node:20.19.4-alpine as builder
+
+# Set working directory
+WORKDIR /app
+
+# Install dependencies for native modules
+RUN apk add --no-cache python3 make g++ libc6-compat
+
+# Set environment variables to disable LightningCSS
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV CSS_TRANSFORMER_WASM=1
+
+# First install only the packages we need to build
+COPY package.json ./
+RUN npm install next react react-dom @tailwindcss/postcss tailwindcss
+
+# Install platform-specific lightningcss binary
+RUN npm install lightningcss-linux-x64-gnu --save-optional
+
+# Copy the rest of the application
+COPY . .
+
+# Create simplified config files
+RUN echo "module.exports = {content: ['./src/**/*.{js,ts,jsx,tsx}'], theme: {extend: {}}};" > tailwind.config.js
+RUN echo "module.exports = {plugins: {'tailwindcss': {}}};" > postcss.config.js
+
+# Build the application (skip source maps to reduce build time)
+RUN NEXT_DISABLE_SOURCEMAPS=1 NEXT_DISABLE_LIGHTNINGCSS=1 npx next build
+
+# Production image with platform specification
+FROM --platform=linux/amd64 node:20.19.4-alpine as runner
+WORKDIR /app
+
+# Set environment variables for runtime
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=8080
+ENV HOSTNAME="0.0.0.0"
+
+# Copy only the necessary files from the builder stage
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+
+# Expose port
+EXPOSE 8080
+
+# Start the application
+CMD ["node", "server.js"]
