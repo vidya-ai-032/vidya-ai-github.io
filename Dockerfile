@@ -14,11 +14,7 @@ RUN npm install next@15.4.2 react@19.1.0 react-dom@19.1.0 html2canvas dompurify 
 # Copy source code
 COPY . .
 
-# Create a minimal tailwind config that doesn't use lightningcss
-RUN echo "module.exports = {content: ['./src/**/*.{js,ts,jsx,tsx}'], theme: {extend: {}}};" > tailwind.config.js
-
-# Create a minimal postcss config
-RUN echo "module.exports = {plugins: {}};" > postcss.config.js
+# Use existing Tailwind and PostCSS configs
 
 # Set environment variables
 ENV NEXT_TELEMETRY_DISABLED=1
