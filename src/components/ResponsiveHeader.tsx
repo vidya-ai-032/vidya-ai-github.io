@@ -48,7 +48,7 @@ export default function ResponsiveHeader() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                     isActive
                       ? "bg-blue-400 text-white"
                       : "text-gray-700 hover:bg-blue-100 hover:text-blue-500"

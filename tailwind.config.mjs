@@ -2,7 +2,11 @@ export default {
   darkMode: "class",
   content: ["./src/**/*.{js,ts,jsx,tsx}"],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        sans: ["var(--font-inter)", "Inter", "system-ui", "sans-serif"],
+      },
+    },
   },
   plugins: [],
   // Disable lightningcss to avoid native module issues in Docker builds

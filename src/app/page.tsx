@@ -21,7 +21,7 @@ export default function Home() {
           <button
             onClick={handleGoogleLogin}
             disabled={isLoading}
-            className="w-full flex items-center justify-center px-4 py-3 border border-gray-300 rounded-lg shadow-sm bg-white text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+            className="w-full flex items-center justify-center px-6 py-4 border border-gray-300 rounded-xl shadow-md bg-white text-gray-700 hover:bg-gray-50 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-[1.02]"
           >
             <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
               <path
