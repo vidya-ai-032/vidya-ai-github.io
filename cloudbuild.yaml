@@ -7,7 +7,7 @@ steps:
         "--platform",
         "linux/amd64",
         "-f",
-        "Dockerfile.minimal",
+        "Dockerfile",
         "-t",
         "gcr.io/$PROJECT_ID/vidya-ai",
         ".",
