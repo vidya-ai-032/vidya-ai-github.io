@@ -30,32 +30,34 @@ export default function ResponsiveHeader() {
           <div className="flex items-center space-x-3">
             <Link
               href="/"
-              className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-xl hover:bg-blue-600 transition-colors shadow-sm"
+              className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-xl hover:bg-blue-600 transition-colors shadow-sm logo"
               aria-label="Home"
             >
               V
             </Link>
-            <span className="text-2xl font-bold text-blue-600 tracking-tight">VidyaAI</span>
+            <span className="text-2xl font-bold text-blue-600 tracking-tight">
+              VidyaAI
+            </span>
           </div>
 
           <nav
-            className="hidden md:flex items-center space-x-3"
+            className="hidden md:flex items-center space-x-3 nav-container"
             aria-label="Main navigation"
           >
             {navLinks.map((link) => {
               const isActive = pathname === link.href;
               return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-                    isActive
-                      ? "bg-blue-400 text-white"
-                      : "text-gray-700 hover:bg-blue-100 hover:text-blue-500"
-                  }`}
-                >
-                  {link.label}
-                </Link>
+                                 <Link
+                   key={link.href}
+                   href={link.href}
+                   className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap nav-link ${
+                     isActive
+                       ? "bg-blue-500 text-white"
+                       : "text-gray-700 hover:bg-blue-100 hover:text-blue-500"
+                   }`}
+                 >
+                   {link.label}
+                 </Link>
               );
             })}
             {isAuthenticated ? (
@@ -68,7 +70,7 @@ export default function ResponsiveHeader() {
             ) : (
               <button
                 onClick={() => signIn("google", { prompt: "select_account" })}
-                className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-500 text-white hover:bg-blue-600 transition-all duration-200 shadow-sm hover:shadow-md"
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-500 text-white hover:bg-blue-600 transition-all duration-200 shadow-sm hover:shadow-md btn-primary"
               >
                 Sign In
               </button>
