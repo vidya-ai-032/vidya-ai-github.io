@@ -69,35 +69,70 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `
+              // DEBUG: Log what elements we find
+              function debugElements() {
+                console.log('=== DEBUG: Element Analysis ===');
+                
+                // Check navigation elements
+                const navLinks = document.querySelectorAll('header nav a, header nav button, .nav-container a, .nav-container button, nav a, nav button');
+                console.log('Navigation links found:', navLinks.length);
+                navLinks.forEach((link, index) => {
+                  console.log('Nav link', index, ':', link.textContent, 'Classes:', link.className);
+                });
+                
+                // Check logo elements
+                const logos = document.querySelectorAll('a[href="/"], .logo, header a[href="/"], .w-10.h-10.bg-blue-500, .w-10.h-10.rounded-lg.bg-blue-500');
+                console.log('Logo elements found:', logos.length);
+                logos.forEach((logo, index) => {
+                  console.log('Logo', index, ':', logo.textContent, 'Classes:', logo.className, 'Background:', logo.style.backgroundColor);
+                });
+                
+                // Check avatar elements
+                const avatars = document.querySelectorAll('.w-10.h-10.rounded-full.bg-blue-600, aside span.w-10.h-10.rounded-full');
+                console.log('Avatar elements found:', avatars.length);
+                avatars.forEach((avatar, index) => {
+                  console.log('Avatar', index, ':', avatar.textContent, 'Classes:', avatar.className, 'Background:', avatar.style.backgroundColor);
+                });
+                
+                console.log('=== END DEBUG ===');
+              }
+
               // Force apply styles after page loads
               function applyCriticalStyles() {
-                               // Force navigation spacing
-               const navLinks = document.querySelectorAll('header nav a, header nav button, .nav-container a, .nav-container button, nav a, nav button');
-               navLinks.forEach(link => {
-                 link.style.marginRight = '12px';
-                 link.style.marginLeft = '0';
-                 link.style.whiteSpace = 'nowrap';
-                 link.style.display = 'inline-block';
-               });
+                console.log('Applying critical styles...');
+                
+                // Force navigation spacing
+                const navLinks = document.querySelectorAll('header nav a, header nav button, .nav-container a, .nav-container button, nav a, nav button');
+                console.log('Found', navLinks.length, 'navigation links');
+                navLinks.forEach((link, index) => {
+                  link.style.marginRight = '12px';
+                  link.style.marginLeft = '0';
+                  link.style.whiteSpace = 'nowrap';
+                  link.style.display = 'inline-block';
+                  console.log('Applied styles to nav link', index, ':', link.textContent);
+                });
 
-                               // Force blue logo
-               const logos = document.querySelectorAll('a[href="/"], .logo, header a[href="/"], .w-10.h-10.bg-blue-500, .w-10.h-10.rounded-lg.bg-blue-500');
-               logos.forEach(logo => {
-                 logo.style.backgroundColor = '#3b82f6';
-                 logo.style.color = 'white';
-                 logo.style.width = '40px';
-                 logo.style.height = '40px';
-                 logo.style.borderRadius = '8px';
-                 logo.style.display = 'flex';
-                 logo.style.alignItems = 'center';
-                 logo.style.justifyContent = 'center';
-                 logo.style.fontWeight = 'bold';
-                 logo.style.fontSize = '20px';
-               });
+                // Force blue logo
+                const logos = document.querySelectorAll('a[href="/"], .logo, header a[href="/"], .w-10.h-10.bg-blue-500, .w-10.h-10.rounded-lg.bg-blue-500');
+                console.log('Found', logos.length, 'logo elements');
+                logos.forEach((logo, index) => {
+                  logo.style.backgroundColor = '#3b82f6';
+                  logo.style.color = 'white';
+                  logo.style.width = '40px';
+                  logo.style.height = '40px';
+                  logo.style.borderRadius = '8px';
+                  logo.style.display = 'flex';
+                  logo.style.alignItems = 'center';
+                  logo.style.justifyContent = 'center';
+                  logo.style.fontWeight = 'bold';
+                  logo.style.fontSize = '20px';
+                  console.log('Applied styles to logo', index, ':', logo.textContent);
+                });
 
                 // Force blue user avatar
                 const avatars = document.querySelectorAll('.w-10.h-10.rounded-full.bg-blue-600, aside span.w-10.h-10.rounded-full');
-                avatars.forEach(avatar => {
+                console.log('Found', avatars.length, 'avatar elements');
+                avatars.forEach((avatar, index) => {
                   avatar.style.backgroundColor = '#3b82f6';
                   avatar.style.color = 'white';
                   avatar.style.width = '40px';
@@ -108,17 +143,25 @@ export default function RootLayout({
                   avatar.style.justifyContent = 'center';
                   avatar.style.fontWeight = 'bold';
                   avatar.style.fontSize = '20px';
+                  console.log('Applied styles to avatar', index, ':', avatar.textContent);
                 });
               }
 
-              // Apply immediately and also after a short delay
+              // Debug first, then apply styles
+              debugElements();
+              
+              // Apply immediately and also after delays
               applyCriticalStyles();
-              setTimeout(applyCriticalStyles, 100);
-              setTimeout(applyCriticalStyles, 500);
-              setTimeout(applyCriticalStyles, 1000);
+              setTimeout(() => { debugElements(); applyCriticalStyles(); }, 100);
+              setTimeout(() => { debugElements(); applyCriticalStyles(); }, 500);
+              setTimeout(() => { debugElements(); applyCriticalStyles(); }, 1000);
+              setTimeout(() => { debugElements(); applyCriticalStyles(); }, 2000);
 
               // Also apply when DOM changes
-              const observer = new MutationObserver(applyCriticalStyles);
+              const observer = new MutationObserver(() => {
+                console.log('DOM changed, reapplying styles...');
+                applyCriticalStyles();
+              });
               observer.observe(document.body, { childList: true, subtree: true });
             `,
           }}

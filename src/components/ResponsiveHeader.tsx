@@ -22,27 +22,31 @@ export default function ResponsiveHeader() {
   // Force apply styles after component mounts
   useEffect(() => {
     // Force navigation spacing
-    const navLinks = document.querySelectorAll('header nav a, header nav button, .nav-container a, .nav-container button, nav a, nav button');
-    navLinks.forEach(link => {
-      (link as HTMLElement).style.marginRight = '12px';
-      (link as HTMLElement).style.marginLeft = '0';
-      (link as HTMLElement).style.whiteSpace = 'nowrap';
-      (link as HTMLElement).style.display = 'inline-block';
+    const navLinks = document.querySelectorAll(
+      "header nav a, header nav button, .nav-container a, .nav-container button, nav a, nav button"
+    );
+    navLinks.forEach((link) => {
+      (link as HTMLElement).style.marginRight = "12px";
+      (link as HTMLElement).style.marginLeft = "0";
+      (link as HTMLElement).style.whiteSpace = "nowrap";
+      (link as HTMLElement).style.display = "inline-block";
     });
 
     // Force blue logo
-    const logos = document.querySelectorAll('a[href="/"], .logo, header a[href="/"], .w-10.h-10.bg-blue-500, .w-10.h-10.rounded-lg.bg-blue-500');
-    logos.forEach(logo => {
-      (logo as HTMLElement).style.backgroundColor = '#3b82f6';
-      (logo as HTMLElement).style.color = 'white';
-      (logo as HTMLElement).style.width = '40px';
-      (logo as HTMLElement).style.height = '40px';
-      (logo as HTMLElement).style.borderRadius = '8px';
-      (logo as HTMLElement).style.display = 'flex';
-      (logo as HTMLElement).style.alignItems = 'center';
-      (logo as HTMLElement).style.justifyContent = 'center';
-      (logo as HTMLElement).style.fontWeight = 'bold';
-      (logo as HTMLElement).style.fontSize = '20px';
+    const logos = document.querySelectorAll(
+      'a[href="/"], .logo, header a[href="/"], .w-10.h-10.bg-blue-500, .w-10.h-10.rounded-lg.bg-blue-500'
+    );
+    logos.forEach((logo) => {
+      (logo as HTMLElement).style.backgroundColor = "#3b82f6";
+      (logo as HTMLElement).style.color = "white";
+      (logo as HTMLElement).style.width = "40px";
+      (logo as HTMLElement).style.height = "40px";
+      (logo as HTMLElement).style.borderRadius = "8px";
+      (logo as HTMLElement).style.display = "flex";
+      (logo as HTMLElement).style.alignItems = "center";
+      (logo as HTMLElement).style.justifyContent = "center";
+      (logo as HTMLElement).style.fontWeight = "bold";
+      (logo as HTMLElement).style.fontSize = "20px";
     });
   }, []);
 
