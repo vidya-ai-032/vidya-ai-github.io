@@ -8,8 +8,8 @@ RUN apk add --no-cache libc6-compat
 # Copy package files
 COPY package.json package-lock.json ./
 
-# Install only the core Next.js dependencies
-RUN npm install next@15.4.2 react@19.1.0 react-dom@19.1.0 html2canvas dompurify canvg --save --no-optional
+# Install all dependencies
+RUN npm install --omit=optional
 
 # Copy source code
 COPY . .
@@ -21,8 +21,8 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 ENV CSS_TRANSFORMER_WASM=1
 
-# Build without Tailwind CSS processing
-RUN npx next build
+# Build using Docker-specific configuration
+RUN npm run build:docker
 
 # Production stage
 FROM --platform=linux/amd64 node:20.19.4-alpine AS runner
