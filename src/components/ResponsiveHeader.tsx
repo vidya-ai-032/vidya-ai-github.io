@@ -30,16 +30,16 @@ export default function ResponsiveHeader() {
           <div className="flex items-center space-x-3">
             <Link
               href="/"
-              className="w-10 h-10 bg-blue-400 rounded-lg flex items-center justify-center text-white font-bold text-xl hover-flip"
+              className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-xl hover:bg-blue-600 transition-colors shadow-sm"
               aria-label="Home"
             >
               V
             </Link>
-            <span className="text-2xl font-bold text-blue-600">VidyaAI</span>
+            <span className="text-2xl font-bold text-blue-600 tracking-tight">VidyaAI</span>
           </div>
 
           <nav
-            className="hidden md:flex items-center space-x-2"
+            className="hidden md:flex items-center space-x-3"
             aria-label="Main navigation"
           >
             {navLinks.map((link) => {
@@ -68,7 +68,7 @@ export default function ResponsiveHeader() {
             ) : (
               <button
                 onClick={() => signIn("google", { prompt: "select_account" })}
-                className="px-3 py-2 rounded-lg text-sm font-medium bg-blue-400 text-white hover:bg-blue-500 transition-colors"
+                className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-500 text-white hover:bg-blue-600 transition-all duration-200 shadow-sm hover:shadow-md"
               >
                 Sign In
               </button>

@@ -117,10 +117,10 @@ export default function Sidebar() {
             <Link
               key={link.href}
               href={link.href}
-              className={`flex items-center gap-3 px-4 py-2 rounded-lg font-medium transition-colors ${
+              className={`flex items-center gap-3 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
                 isActive
-                  ? "bg-blue-400 text-white shadow-md"
-                  : "text-gray-700 hover:bg-blue-100 hover:text-blue-500"
+                  ? "bg-blue-500 text-white shadow-md"
+                  : "text-gray-700 hover:bg-blue-50 hover:text-blue-600"
               } ${collapsed ? "justify-center" : ""}`}
               title={collapsed ? link.label : undefined}
             >
