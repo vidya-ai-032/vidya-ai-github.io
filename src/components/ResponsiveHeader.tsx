@@ -22,15 +22,16 @@ export default function ResponsiveHeader() {
   // Force apply styles after component mounts
   useEffect(() => {
     // Force navigation spacing
-    const navLinks = document.querySelectorAll('header nav a, header nav button, .nav-container a, .nav-container button');
+    const navLinks = document.querySelectorAll('header nav a, header nav button, .nav-container a, .nav-container button, nav a, nav button');
     navLinks.forEach(link => {
       (link as HTMLElement).style.marginRight = '12px';
+      (link as HTMLElement).style.marginLeft = '0';
       (link as HTMLElement).style.whiteSpace = 'nowrap';
       (link as HTMLElement).style.display = 'inline-block';
     });
 
     // Force blue logo
-    const logos = document.querySelectorAll('a[href="/"], .logo, header a[href="/"]');
+    const logos = document.querySelectorAll('a[href="/"], .logo, header a[href="/"], .w-10.h-10.bg-blue-500, .w-10.h-10.rounded-lg.bg-blue-500');
     logos.forEach(logo => {
       (logo as HTMLElement).style.backgroundColor = '#3b82f6';
       (logo as HTMLElement).style.color = 'white';
@@ -79,7 +80,7 @@ export default function ResponsiveHeader() {
           </div>
 
           <nav
-            className="hidden md:flex items-center space-x-3 nav-container"
+            className="hidden md:flex items-center nav-container"
             aria-label="Main navigation"
             style={{ display: "flex", alignItems: "center", gap: "12px" }}
           >
@@ -98,6 +99,7 @@ export default function ResponsiveHeader() {
                     marginRight: "12px",
                     whiteSpace: "nowrap",
                     display: "inline-block",
+                    marginLeft: "0",
                   }}
                 >
                   {link.label}

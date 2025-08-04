@@ -28,8 +28,11 @@ nav button {
 header nav a,
 header nav button,
 .nav-container a,
-.nav-container button {
+.nav-container button,
+nav a,
+nav button {
   margin-right: 12px !important;
+  margin-left: 0 !important;
   padding-right: 8px !important;
   padding-left: 8px !important;
   white-space: nowrap !important;
@@ -40,7 +43,8 @@ header nav button,
 a[href="/"],
 .logo,
 header a[href="/"],
-.w-10.h-10.bg-blue-500 {
+.w-10.h-10.bg-blue-500,
+.w-10.h-10.rounded-lg.bg-blue-500 {
   background-color: #3b82f6 !important;
   color: white !important;
   width: 40px !important;
@@ -192,6 +196,7 @@ a[href="/"],
 .logo,
 header a[href="/"],
 .w-10.h-10.bg-blue-500,
+.w-10.h-10.rounded-lg.bg-blue-500,
 .w-10.h-10.rounded-full.bg-blue-600,
 aside span.w-10.h-10.rounded-full,
 .bg-blue-500,
@@ -204,7 +209,8 @@ aside span.w-10.h-10.rounded-full,
 a[href="/"],
 .logo,
 header a[href="/"],
-.w-10.h-10.bg-blue-500 {
+.w-10.h-10.bg-blue-500,
+.w-10.h-10.rounded-lg.bg-blue-500 {
   width: 40px !important;
   height: 40px !important;
   border-radius: 8px !important;

@@ -28,7 +28,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-                <style
+        <style
           dangerouslySetInnerHTML={{
             __html: `
               /* CRITICAL INLINE STYLES - Override everything */
@@ -71,28 +71,29 @@ export default function RootLayout({
             __html: `
               // Force apply styles after page loads
               function applyCriticalStyles() {
-                // Force navigation spacing
-                const navLinks = document.querySelectorAll('header nav a, header nav button, .nav-container a, .nav-container button');
-                navLinks.forEach(link => {
-                  link.style.marginRight = '12px';
-                  link.style.whiteSpace = 'nowrap';
-                  link.style.display = 'inline-block';
-                });
+                               // Force navigation spacing
+               const navLinks = document.querySelectorAll('header nav a, header nav button, .nav-container a, .nav-container button, nav a, nav button');
+               navLinks.forEach(link => {
+                 link.style.marginRight = '12px';
+                 link.style.marginLeft = '0';
+                 link.style.whiteSpace = 'nowrap';
+                 link.style.display = 'inline-block';
+               });
 
-                // Force blue logo
-                const logos = document.querySelectorAll('a[href="/"], .logo, header a[href="/"]');
-                logos.forEach(logo => {
-                  logo.style.backgroundColor = '#3b82f6';
-                  logo.style.color = 'white';
-                  logo.style.width = '40px';
-                  logo.style.height = '40px';
-                  logo.style.borderRadius = '8px';
-                  logo.style.display = 'flex';
-                  logo.style.alignItems = 'center';
-                  logo.style.justifyContent = 'center';
-                  logo.style.fontWeight = 'bold';
-                  logo.style.fontSize = '20px';
-                });
+                               // Force blue logo
+               const logos = document.querySelectorAll('a[href="/"], .logo, header a[href="/"], .w-10.h-10.bg-blue-500, .w-10.h-10.rounded-lg.bg-blue-500');
+               logos.forEach(logo => {
+                 logo.style.backgroundColor = '#3b82f6';
+                 logo.style.color = 'white';
+                 logo.style.width = '40px';
+                 logo.style.height = '40px';
+                 logo.style.borderRadius = '8px';
+                 logo.style.display = 'flex';
+                 logo.style.alignItems = 'center';
+                 logo.style.justifyContent = 'center';
+                 logo.style.fontWeight = 'bold';
+                 logo.style.fontSize = '20px';
+               });
 
                 // Force blue user avatar
                 const avatars = document.querySelectorAll('.w-10.h-10.rounded-full.bg-blue-600, aside span.w-10.h-10.rounded-full');
