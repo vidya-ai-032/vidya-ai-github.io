@@ -78,11 +78,14 @@ export default function Sidebar() {
                 alt={session.user.name || "User"}
                 className="w-10 h-10 rounded-full border-2 border-blue-600 object-cover"
               />
-            ) : (
-              <span className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xl">
-                {session.user.name ? session.user.name.charAt(0) : "V"}
-              </span>
-            )}
+                         ) : (
+               <span 
+                 className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xl"
+                 style={{ backgroundColor: '#3b82f6', color: 'white', width: '40px', height: '40px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '20px' }}
+               >
+                 {session.user.name ? session.user.name.charAt(0) : "V"}
+               </span>
+             )}
             <span className="text-lg font-bold text-blue-600">
               {session.user.name || "VidyaAI"}
             </span>
