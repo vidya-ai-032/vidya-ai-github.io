@@ -1,70 +1,61 @@
 # Builder stage: install deps and build
-FROM --platform=linux/amd64 node:20.19.4 AS builder
+FROM --platform=linux/amd64 node:20.19.4-alpine AS builder
 WORKDIR /app
 
-# Accept build arguments
-ARG NEXT_DISABLE_LIGHTNINGCSS=1
+# Install only essential dependencies
+RUN apk add --no-cache libc6-compat
 
-# Install build dependencies for native modules
-RUN apt-get update && apt-get install -y \
-    python3 \
-    build-essential \
-    g++ \
-    make \
-    && rm -rf /var/lib/apt/lists/*
+# Copy package files
+COPY package.json package-lock.json ./
 
-# Set environment variables for build
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV NEXT_DISABLE_LIGHTNINGCSS=1
-ENV NODE_OPTIONS="--max_old_space_size=4096"
-ENV CSS_TRANSFORMER_WASM=1
+# Install only the core Next.js dependencies
+RUN npm install next@15.4.2 react@19.1.0 react-dom@19.1.0 html2canvas dompurify canvg --save --no-optional
 
-# Copy package files and npm config
-COPY package*.json ./
-
-# Use npm install instead of npm ci to refresh the lockfile
-RUN npm install --no-optional
-
-# Copy the rest of the code
+# Copy source code
 COPY . .
 
-# Build the Next.js app with LightningCSS disabled
-RUN npm run build:docker
+# Create a minimal tailwind config that doesn't use lightningcss
+RUN echo "module.exports = {content: ['./src/**/*.{js,ts,jsx,tsx}'], theme: {extend: {}}};" > tailwind.config.js
 
-# Runner stage: production image
-FROM --platform=linux/amd64 node:20.19.4-slim AS runner
+# Create a minimal postcss config
+RUN echo "module.exports = {plugins: {}};" > postcss.config.js
+
+# Set environment variables
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
+ENV CSS_TRANSFORMER_WASM=1
+
+# Build without Tailwind CSS processing
+RUN npx next build
+
+# Production stage
+FROM --platform=linux/amd64 node:20.19.4-alpine AS runner
+
 WORKDIR /app
 
-# Set to production environment
+# Set environment variables
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=8080
 ENV HOSTNAME="0.0.0.0"
 
-# Create a non-root user for security
-RUN addgroup --system --gid 1001 nodejs \
-    && adduser --system --uid 1001 nextjs
-
-# Copy package files
-COPY --from=builder /app/package.json ./
-COPY --from=builder /app/package-lock.json ./
-
-# Install only production dependencies
-RUN npm ci --omit=dev
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
 
 # Copy built application
-COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/next.config.js ./
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 
-# Set proper permissions
+# Set permissions
 RUN chown -R nextjs:nodejs /app
 
-# Use non-root user
+# Switch to non-root user
 USER nextjs
 
 # Expose port
 EXPOSE 8080
 
 # Start the application
-CMD ["npm", "start"]
+CMD ["node", "server.js"]
