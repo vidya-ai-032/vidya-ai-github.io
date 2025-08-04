@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { useSession, signIn, signOut } from "next-auth/react";
 
@@ -18,6 +18,32 @@ export default function ResponsiveHeader() {
   const pathname = usePathname();
   const { status } = useSession();
   const isAuthenticated = status === "authenticated";
+
+  // Force apply styles after component mounts
+  useEffect(() => {
+    // Force navigation spacing
+    const navLinks = document.querySelectorAll('header nav a, header nav button, .nav-container a, .nav-container button');
+    navLinks.forEach(link => {
+      (link as HTMLElement).style.marginRight = '12px';
+      (link as HTMLElement).style.whiteSpace = 'nowrap';
+      (link as HTMLElement).style.display = 'inline-block';
+    });
+
+    // Force blue logo
+    const logos = document.querySelectorAll('a[href="/"], .logo, header a[href="/"]');
+    logos.forEach(logo => {
+      (logo as HTMLElement).style.backgroundColor = '#3b82f6';
+      (logo as HTMLElement).style.color = 'white';
+      (logo as HTMLElement).style.width = '40px';
+      (logo as HTMLElement).style.height = '40px';
+      (logo as HTMLElement).style.borderRadius = '8px';
+      (logo as HTMLElement).style.display = 'flex';
+      (logo as HTMLElement).style.alignItems = 'center';
+      (logo as HTMLElement).style.justifyContent = 'center';
+      (logo as HTMLElement).style.fontWeight = 'bold';
+      (logo as HTMLElement).style.fontSize = '20px';
+    });
+  }, []);
 
   return (
     <header

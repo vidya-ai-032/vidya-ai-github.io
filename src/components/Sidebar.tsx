@@ -20,6 +20,24 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
 
+  // Force apply styles after component mounts
+  useEffect(() => {
+    // Force blue user avatar
+    const avatars = document.querySelectorAll('.w-10.h-10.rounded-full.bg-blue-600, aside span.w-10.h-10.rounded-full');
+    avatars.forEach(avatar => {
+      (avatar as HTMLElement).style.backgroundColor = '#3b82f6';
+      (avatar as HTMLElement).style.color = 'white';
+      (avatar as HTMLElement).style.width = '40px';
+      (avatar as HTMLElement).style.height = '40px';
+      (avatar as HTMLElement).style.borderRadius = '50%';
+      (avatar as HTMLElement).style.display = 'flex';
+      (avatar as HTMLElement).style.alignItems = 'center';
+      (avatar as HTMLElement).style.justifyContent = 'center';
+      (avatar as HTMLElement).style.fontWeight = 'bold';
+      (avatar as HTMLElement).style.fontSize = '20px';
+    });
+  }, []);
+
   // Helper to clear all user-related localStorage keys
   function clearUserLocalStorage(email?: string) {
     if (!email || typeof window === "undefined") return;
