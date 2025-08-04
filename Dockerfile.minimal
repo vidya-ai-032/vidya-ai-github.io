@@ -10,7 +10,7 @@ RUN apk add --no-cache libc6-compat
 COPY package.json package-lock.json ./
 
 # Install only the core Next.js dependencies
-RUN npm install next@15.4.2 react@19.1.0 react-dom@19.1.0 --save --no-optional
+RUN npm install next@15.4.2 react@19.1.0 react-dom@19.1.0 html2canvas dompurify canvg --save --no-optional
 
 # Copy source code
 COPY . .
