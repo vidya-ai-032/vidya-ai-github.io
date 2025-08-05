@@ -17,7 +17,6 @@ interface QA {
 export default function QAPage() {
   const { data: session, status } = useSession();
   const [qaHistory, setQaHistory] = useState<QA[]>([]);
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [userAnswers, setUserAnswers] = useState<Record<string, string>>({});
   const [evaluations, setEvaluations] = useState<Record<string, string>>({});
   const recognitionRef = useRef<any>(null);

@@ -30,47 +30,67 @@ export interface TutorResponse {
   followUpQuestions: string[];
 }
 
+interface GeminiError extends Error {
+  userMessage?: string;
+  rawResponse?: string;
+}
+
 // Helper to get the Gemini model using the user's key if present
 function getGeminiModel() {
   if (typeof window !== "undefined") {
     const userKey = localStorage.getItem("vidyaai_gemini_api_key");
     if (userKey) {
+      console.log("Using user-provided Gemini API key");
       const genAI = new GoogleGenerativeAI(userKey);
       return genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     }
   }
   // Fallback to server-side or default key
-  const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GEMINI_API_KEY!);
+  const serverKey = process.env.GOOGLE_GEMINI_API_KEY;
+  if (!serverKey) {
+    console.error("🚨 Gemini API key is missing from environment variables");
+    console.error("This will cause all AI features to fail in production");
+    throw new Error(
+      "Your Gemini API key is invalid or missing. Please check your settings."
+    );
+  }
+  console.log("Using server-side Gemini API key");
+  const genAI = new GoogleGenerativeAI(serverKey);
   return genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 }
 
-async function generateWithRetry(model, prompt, maxRetries = 3) {
-  let lastError = null;
+async function generateWithRetry(
+  model: any,
+  prompt: string,
+  maxRetries: number = 3
+): Promise<any> {
+  let lastError: GeminiError | null = null;
   for (let i = 0; i < maxRetries; i++) {
     try {
       const result = await model.generateContent(prompt);
       return result;
-    } catch (error) {
-      lastError = error;
+    } catch (error: unknown) {
+      lastError = error as GeminiError;
       // Check for Gemini API error details
-      if (error && typeof error === "object") {
-        if (error.message && error.message.includes("quota")) {
-          error.userMessage =
+      if (error && typeof error === "object" && error !== null) {
+        const err = error as GeminiError;
+        if (err.message && err.message.includes("quota")) {
+          err.userMessage =
             "You have exceeded your Gemini API quota. Please use a different API key in settings or wait for your quota to reset.";
-        } else if (error.message && error.message.includes("API key")) {
-          error.userMessage =
+        } else if (err.message && err.message.includes("API key")) {
+          err.userMessage =
             "Your Gemini API key is invalid or missing. Please check your settings.";
-        } else if (error.message && error.message.includes("429")) {
-          error.userMessage =
+        } else if (err.message && err.message.includes("429")) {
+          err.userMessage =
             "You are being rate limited by Gemini. Please wait and try again.";
-        } else if (error.message && error.message.includes("401")) {
-          error.userMessage = "Unauthorized: Please check your Gemini API key.";
-        } else if (error.message && error.message.includes("503")) {
-          error.userMessage = "Gemini API is overloaded. Retrying...";
+        } else if (err.message && err.message.includes("401")) {
+          err.userMessage = "Unauthorized: Please check your Gemini API key.";
+        } else if (err.message && err.message.includes("503")) {
+          err.userMessage = "Gemini API is overloaded. Retrying...";
         }
       }
       // Check if the error is a 503 (overloaded) error
-      if (error.message && error.message.includes("503")) {
+      if (lastError.message && lastError.message.includes("503")) {
         console.warn(`Gemini API overloaded. Retrying in ${i + 1}s...`);
         await new Promise((resolve) => setTimeout(resolve, (i + 1) * 1000)); // Exponential backoff
         continue;
@@ -86,7 +106,7 @@ async function generateWithRetry(model, prompt, maxRetries = 3) {
 }
 
 // Helper to safely parse Gemini JSON
-function safeParseGeminiJSON(raw) {
+function safeParseGeminiJSON(raw: string): any {
   // Remove code block markers if present
   let jsonString = raw.trim();
   if (jsonString.startsWith("```json")) {
@@ -110,7 +130,7 @@ function safeParseGeminiJSON(raw) {
   }
 
   // Remove all control characters except for allowed whitespace
-  jsonString = jsonString.replace(/[\u0000-\u001F\u007F]/g, (c) => {
+  jsonString = jsonString.replace(/[\u0000-\u001F\u007F]/g, (c: string) => {
     if (c === "\n" || c === "\r" || c === "\t") return c;
     return "";
   });
@@ -135,7 +155,15 @@ export class GeminiService {
     content: string,
     subject: string
   ): Promise<ContentTopic[]> {
+    console.log("🔧 GeminiService.processContent called");
+    console.log("📄 Content length:", content.length);
+    console.log("📚 Subject:", subject);
+
     try {
+      console.log("🔑 Getting Gemini model...");
+      const model = getGeminiModel();
+      console.log("✅ Gemini model obtained successfully");
+
       const prompt = `
         You are an expert teacher and subject matter expert. Analyze the following document content and:
 
@@ -164,30 +192,47 @@ export class GeminiService {
         - Include estimated study time for each subtopic
       `;
 
-      const model = getGeminiModel();
       const fullPrompt = `${prompt}\n\nDocument Content:\n${content}`;
+      console.log("📝 Sending request to Gemini API...");
+      console.log("📏 Prompt length:", fullPrompt.length);
+
       const result = await generateWithRetry(model, fullPrompt);
+      console.log("✅ Gemini API response received");
+
       const response = await result.response;
       const text = response.text();
+      console.log("📄 Raw response length:", text.length);
       console.log("Gemini raw response:", text); // Debug Gemini response
+
       // Extract JSON from the response
       const jsonMatch = text.match(/\[[\s\S]*\]/);
       if (jsonMatch) {
-        return safeParseGeminiJSON(jsonMatch[0]);
+        console.log("✅ JSON match found, parsing...");
+        const parsed = safeParseGeminiJSON(jsonMatch[0]);
+        console.log("✅ Content processing completed successfully");
+        return parsed;
       }
 
+      console.error("❌ No JSON array found in response");
       throw new Error("Failed to parse content processing response");
-    } catch (error) {
-      console.error("Error processing content:", error);
+    } catch (error: unknown) {
+      console.error("💥 Error in GeminiService.processContent:", error);
       // If error has userMessage, throw that for the API route to catch
-      if (error && error.userMessage) {
-        throw new Error(error.userMessage);
+      if (
+        error &&
+        typeof error === "object" &&
+        (error as GeminiError).userMessage
+      ) {
+        throw new Error((error as GeminiError).userMessage);
       }
       // If error is from parsing, include the raw response if available
       if (error instanceof Error && error.message.includes("parse")) {
+        const geminiError = error as GeminiError;
         throw new Error(
           `Failed to process content: ${error.message}${
-            error.rawResponse ? ` | Raw response: ${error.rawResponse}` : ""
+            geminiError.rawResponse
+              ? ` | Raw response: ${geminiError.rawResponse}`
+              : ""
           }`
         );
       }
@@ -274,14 +319,20 @@ export class GeminiService {
     } catch (error) {
       console.error("Error generating quiz:", error);
       // If error has userMessage, throw that for the API route to catch
-      if (error && error.userMessage) {
-        throw new Error(error.userMessage);
+      if (
+        error &&
+        typeof error === "object" &&
+        (error as GeminiError).userMessage
+      ) {
+        throw new Error((error as GeminiError).userMessage);
       }
       // If error is from parsing, include the raw response if available
       if (error instanceof Error && error.message.includes("parse")) {
         throw new Error(
           `Failed to generate quiz: ${error.message}${
-            error.rawResponse ? ` | Raw response: ${error.rawResponse}` : ""
+            (error as GeminiError).rawResponse
+              ? ` | Raw response: ${(error as GeminiError).rawResponse}`
+              : ""
           }`
         );
       }
@@ -379,10 +430,14 @@ export class GeminiService {
         followUpQuestions: [],
         fallback: true,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in tutor conversation:", error);
-      if (error && error.userMessage) {
-        throw new Error(error.userMessage);
+      if (
+        error &&
+        typeof error === "object" &&
+        (error as GeminiError).userMessage
+      ) {
+        throw new Error((error as GeminiError).userMessage);
       }
       throw new Error("Failed to get tutor response");
     }
@@ -431,7 +486,7 @@ export class GeminiService {
       }
 
       throw new Error("Failed to parse evaluation response");
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error evaluating answer:", error);
       throw new Error("Failed to evaluate answer");
     }

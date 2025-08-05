@@ -29,20 +29,20 @@ export async function POST(request: NextRequest) {
       });
     }
     return NextResponse.json(aiRes);
-  } catch (error: any) {
+  } catch (error: unknown) {
     let message = "Unknown error";
     let details = null;
 
     if (error) {
       if (typeof error === "string") {
         message = error;
-      } else if (error.message) {
-        message = error.message;
+      } else if ((error as Error).message) {
+        message = (error as Error).message;
       } else {
         message = JSON.stringify(error);
       }
-      if (error.stack) {
-        details = error.stack;
+      if ((error as Error).stack) {
+        details = (error as Error).stack;
       } else {
         details = JSON.stringify(error);
       }

@@ -1,8 +1,8 @@
 "use client";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession, signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+// import { useRouter } from "next/navigation"; // Removed unused import
 import { FaTrash } from "react-icons/fa";
 
 interface QuizHistory {
@@ -51,7 +51,7 @@ const quickActions = [
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
-  const router = useRouter();
+  // const router = useRouter(); // Removed unused variable
 
   const [stats, setStats] = useState({
     topicsCompleted: 0,
@@ -72,7 +72,7 @@ export default function DashboardPage() {
   const [tutorError, setTutorError] = useState<string | null>(null);
 
   // Helper to load recent topics from both quiz history and library
-  const loadRecentTopics = () => {
+  const loadRecentTopics = useCallback(() => {
     if (status === "authenticated" && session?.user?.email) {
       // 1. Load quiz history
       const quizHistory: QuizHistory[] = JSON.parse(
@@ -80,7 +80,7 @@ export default function DashboardPage() {
           "[]"
       );
       // 2. Load library
-      const library: any[] = JSON.parse(
+      const library: Array<{ name: string; date: string }> = JSON.parse(
         localStorage.getItem(`vidyaai_library_${session.user.email}`) || "[]"
       );
       // 3. Build a map of topics from quiz history (for lastStudied/progress)
@@ -102,7 +102,7 @@ export default function DashboardPage() {
         const subtopics = JSON.parse(localStorage.getItem(subKey) || "[]");
         if (subtopics && subtopics.length > 0) {
           // Each subtopic is a topic
-          subtopics.forEach((sub) => {
+          subtopics.forEach((sub: { title: string }) => {
             if (!libTopicsMap.has(sub.title)) {
               libTopicsMap.set(sub.title, {
                 label: sub.title,
@@ -165,7 +165,7 @@ export default function DashboardPage() {
       });
       setRecentTopics(sortedTopics.slice(0, 3));
     }
-  };
+  }, [status, session?.user?.email]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -199,13 +199,15 @@ export default function DashboardPage() {
       const quizKey = `vidyaai_quiz_history_${session.user.email}`;
       const quizHistory = JSON.parse(localStorage.getItem(quizKey) || "[]");
       const updatedQuiz = quizHistory.filter(
-        (q: any) => q.topicLabel !== topicLabel
+        (q: QuizHistory) => q.topicLabel !== topicLabel
       );
       localStorage.setItem(quizKey, JSON.stringify(updatedQuiz));
       // Remove from library
       const libraryKey = `vidyaai_library_${session.user.email}`;
       const prevLib = JSON.parse(localStorage.getItem(libraryKey) || "[]");
-      const updatedLib = prevLib.filter((d: any) => d.name !== topicLabel);
+      const updatedLib = prevLib.filter(
+        (d: { name: string }) => d.name !== topicLabel
+      );
       localStorage.setItem(libraryKey, JSON.stringify(updatedLib));
       // Remove subtopics
       const subKey = `vidyaai_subtopics_${session.user.email}_${topicLabel}`;
@@ -216,7 +218,11 @@ export default function DashboardPage() {
   };
 
   // Teach Me This handler for subtopics in modal
-  const handleTeachMeThis = async (subtopic: any) => {
+  const handleTeachMeThis = async (subtopic: {
+    title: string;
+    summary: string;
+    keyPoints?: string[];
+  }) => {
     setTutorLoading(subtopic.title);
     setTutorError(null);
     setTutorState((prev) => ({ ...prev, [subtopic.title]: { loading: true } }));
@@ -241,12 +247,13 @@ export default function DashboardPage() {
         ...prev,
         [subtopic.title]: { ...data, loading: false },
       }));
-    } catch (err: any) {
-      setTutorError(err.message || "Unknown error");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Unknown error";
+      setTutorError(errorMessage);
       setTutorState((prev) => ({
         ...prev,
         [subtopic.title]: {
-          error: err.message || "Unknown error",
+          error: errorMessage,
           loading: false,
         },
       }));
@@ -290,7 +297,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-gray-50 p-3 sm:p-4 lg:p-6 xl:p-8">
       {showApiBanner && (
         <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded-md flex items-center justify-between shadow-sm">
           <div>
@@ -317,16 +324,16 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-1">
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
           Welcome back, {session?.user?.name?.split(" ")[0] || "User"}! 👋
         </h1>
-        <p className="text-gray-600">
-          Here's your learning dashboard for today.
+        <p className="text-gray-600 text-sm sm:text-base">
+          Here&apos;s your learning dashboard for today.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
         <StatCard
           title="Topics Completed"
           value={stats.topicsCompleted}
@@ -341,21 +348,23 @@ export default function DashboardPage() {
         <StatCard title="Study Time" value={stats.studyTime} icon="⏱️" />
       </div>
 
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Quick Actions</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="mb-6 sm:mb-8">
+        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">
+          Quick Actions
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {quickActions.map((action) => (
             <ActionCard key={action.title} {...action} />
           ))}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         <div className="lg:col-span-2">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">
             Recent Topics
           </h2>
-          <div className="bg-white p-6 rounded-lg shadow-sm space-y-4">
+          <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm space-y-3 sm:space-y-4">
             {recentTopics.length > 0 ? (
               recentTopics.map((topic) => (
                 <TopicItem
@@ -376,10 +385,10 @@ export default function DashboardPage() {
           </div>
         </div>
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">
             AI Recommendations
           </h2>
-          <div className="bg-white p-6 rounded-lg shadow-sm space-y-4">
+          <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm space-y-3 sm:space-y-4">
             <RecommendationItem
               title="Review Photosynthesis"
               description="Your last quiz score was a bit low. A quick review could help."
@@ -397,8 +406,8 @@ export default function DashboardPage() {
       </div>
       {/* Modal for viewing topic details */}
       {showModal && viewedTopic && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-2xl w-full relative animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto relative animate-fadeIn">
             <button
               className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-xl font-bold"
               onClick={() => setShowModal(false)}
@@ -526,61 +535,113 @@ export default function DashboardPage() {
   );
 }
 
-const StatCard = ({ title, value, icon }) => (
-  <div className="bg-white p-6 rounded-lg shadow-sm flex items-center">
-    <div className="text-3xl mr-4">{icon}</div>
+const StatCard = ({
+  title,
+  value,
+  icon,
+}: {
+  title: string;
+  value: string | number;
+  icon: React.ReactNode;
+}) => (
+  <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm flex items-center">
+    <div className="text-2xl sm:text-3xl mr-3 sm:mr-4">{icon}</div>
     <div>
-      <p className="text-gray-600 text-sm">{title}</p>
-      <p className="text-2xl font-bold text-gray-900">{value}</p>
+      <p className="text-gray-600 text-xs sm:text-sm">{title}</p>
+      <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
+        {value}
+      </p>
     </div>
   </div>
 );
 
-const ActionCard = ({ title, description, icon, href, color }) => (
+const ActionCard = ({
+  title,
+  description,
+  icon,
+  href,
+  color,
+}: {
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  href: string;
+  color: string;
+}) => (
   <Link
     href={href}
-    className="bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow flex items-start"
+    className="bg-white p-4 sm:p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow flex items-start"
   >
-    <div className={`text-2xl mr-4 p-2 rounded-lg ${color}`}>{icon}</div>
+    <div className={`text-xl sm:text-2xl mr-3 sm:mr-4 p-2 rounded-lg ${color}`}>
+      {icon}
+    </div>
     <div>
-      <h3 className="font-bold text-gray-900">{title}</h3>
-      <p className="text-gray-600 text-sm">{description}</p>
+      <h3 className="font-bold text-gray-900 text-sm sm:text-base">{title}</h3>
+      <p className="text-gray-600 text-xs sm:text-sm">{description}</p>
     </div>
   </Link>
 );
 
-const TopicItem = ({ label, lastStudied, progress, onView, onDelete }) => (
-  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-    <div>
-      <h4 className="font-bold text-gray-800">{label}</h4>
-      <p className="text-sm text-gray-500">Last studied: {lastStudied}</p>
+const TopicItem = ({
+  label,
+  lastStudied,
+  progress,
+  onView,
+  onDelete,
+}: {
+  label: string;
+  lastStudied?: string;
+  progress?: number;
+  onView: () => void;
+  onDelete: () => void;
+}) => (
+  <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg gap-3 sm:gap-0">
+    <div className="flex-1 min-w-0">
+      <h4 className="font-bold text-gray-800 text-sm sm:text-base truncate">
+        {label}
+      </h4>
+      <p className="text-xs sm:text-sm text-gray-500">
+        Last studied: {lastStudied}
+      </p>
     </div>
-    <div className="flex items-center gap-3">
-      <div className="w-24 bg-gray-200 rounded-full h-2.5">
+    <div className="flex items-center gap-2 sm:gap-3">
+      <div className="w-16 sm:w-24 bg-gray-200 rounded-full h-2">
         <div
-          className="bg-blue-600 h-2.5 rounded-full"
+          className="bg-blue-600 h-2 rounded-full"
           style={{ width: `${progress}%` }}
         ></div>
       </div>
-      <span className="font-semibold text-gray-700">{progress}%</span>
+      <span className="font-semibold text-gray-700 text-xs sm:text-sm">
+        {progress}%
+      </span>
       <button
-        className="ml-4 bg-blue-400 text-white px-3 py-1 rounded hover:bg-blue-500 font-semibold text-sm"
+        className="bg-blue-400 text-white px-2 sm:px-3 py-1 rounded hover:bg-blue-500 font-semibold text-xs sm:text-sm"
         onClick={onView}
       >
         View
       </button>
       <button
-        className="ml-2 text-red-600 hover:text-red-800"
+        className="text-red-600 hover:text-red-800 p-1"
         onClick={onDelete}
         title="Delete topic"
       >
-        <FaTrash />
+        <FaTrash className="w-3 h-3 sm:w-4 sm:h-4" />
       </button>
     </div>
   </div>
 );
 
-const RecommendationItem = ({ title, description, href, icon }) => (
+const RecommendationItem = ({
+  title,
+  description,
+  href,
+  icon,
+}: {
+  title: string;
+  description: string;
+  href: string;
+  icon: React.ReactNode;
+}) => (
   <div className="flex items-start">
     <div className="text-xl mr-4">{icon}</div>
     <div>

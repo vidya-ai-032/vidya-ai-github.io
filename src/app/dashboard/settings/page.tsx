@@ -93,7 +93,7 @@ export default function SettingsPage() {
           </h2>
           <p className="text-gray-600 text-sm mb-4">
             Enter your personal Gemini API key to use your own quota for AI
-            features. This key is stored securely in your browser's local
+            features. This key is stored securely in your browser&apos;s local
             storage.
           </p>
           <form onSubmit={handleSave} className="space-y-4">

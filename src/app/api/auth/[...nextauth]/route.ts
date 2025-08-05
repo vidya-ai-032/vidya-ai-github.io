@@ -1,5 +1,11 @@
 import NextAuth from "next-auth";
 import { authOptions } from "../authOptions";
+import {
+  validateEnvironmentVariables,
+  getEnvironmentInfo,
+  checkProductionEnvironment,
+} from "@/lib/env";
+
 declare module "next-auth" {
   interface Session {
     user: {
@@ -10,6 +16,16 @@ declare module "next-auth" {
       role?: string;
     };
   }
+}
+
+// Validate environment variables on startup
+try {
+  validateEnvironmentVariables();
+  console.log("Environment info:", getEnvironmentInfo());
+  // Check for production-specific issues
+  checkProductionEnvironment();
+} catch (error) {
+  console.error("Environment validation failed:", error);
 }
 
 const handler = NextAuth(authOptions);

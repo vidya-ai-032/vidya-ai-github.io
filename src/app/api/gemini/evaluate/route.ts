@@ -3,8 +3,7 @@ import { GeminiService } from "@/lib/gemini";
 
 export async function POST(request: NextRequest) {
   try {
-    const { question, correctAnswer, studentAnswer, questionType } =
-      await request.json();
+    const { question, correctAnswer, studentAnswer } = await request.json();
     if (!question || studentAnswer === undefined) {
       return NextResponse.json(
         { error: "Question and student answer are required" },
@@ -20,15 +19,15 @@ export async function POST(request: NextRequest) {
     const response = await result.response;
     const feedback = response.text();
     return NextResponse.json({ evaluation: { feedback } });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error generating evaluation feedback:", error);
     return NextResponse.json(
       {
         error: "Failed to evaluate answer",
         userMessage:
-          error?.message ||
+          (error as Error)?.message ||
           "Could not evaluate your answer. Please try again later.",
-        details: error?.stack || String(error),
+        details: (error as Error)?.stack || String(error),
       },
       { status: 500 }
     );

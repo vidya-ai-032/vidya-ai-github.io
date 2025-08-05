@@ -35,33 +35,33 @@ export async function POST(request: NextRequest) {
         conversationHistory
       );
       return NextResponse.json({ response });
-    } catch (geminiErr: any) {
+    } catch (geminiErr: unknown) {
       console.error("[Gemini Tutor] GeminiService error:", geminiErr);
       return NextResponse.json(
         {
           error: "Failed to get tutor response",
           userMessage:
-            geminiErr?.message ||
+            (geminiErr as Error)?.message ||
             "AI Tutor is currently unavailable. Please try again later.",
-          details: geminiErr?.stack || String(geminiErr),
+          details: (geminiErr as Error)?.stack || String(geminiErr),
         },
         { status: 500 }
       );
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     let message = "Unknown error";
     let details = null;
 
     if (error) {
       if (typeof error === "string") {
         message = error;
-      } else if (error.message) {
-        message = error.message;
+      } else if ((error as Error).message) {
+        message = (error as Error).message;
       } else {
         message = JSON.stringify(error);
       }
-      if (error.stack) {
-        details = error.stack;
+      if ((error as Error).stack) {
+        details = (error as Error).stack;
       } else {
         details = JSON.stringify(error);
       }

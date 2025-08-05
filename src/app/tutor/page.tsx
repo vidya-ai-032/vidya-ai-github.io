@@ -265,8 +265,8 @@ export default function TutorPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 py-6 sm:py-12 px-2 sm:px-4">
-      <div className="bg-white rounded-2xl shadow-lg p-3 sm:p-6 max-w-xl w-full flex flex-col h-[80vh]">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50 py-4 sm:py-6 lg:py-12 px-2 sm:px-4">
+      <div className="bg-white rounded-2xl shadow-lg p-3 sm:p-6 max-w-xl w-full flex flex-col h-[70vh] sm:h-[80vh]">
         <h1 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 text-center">
           🎤 Voice-First AI Tutor
         </h1>

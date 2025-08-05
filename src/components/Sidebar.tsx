@@ -20,24 +20,6 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
 
-  // Force apply styles after component mounts
-  useEffect(() => {
-    // Force blue user avatar
-    const avatars = document.querySelectorAll('.w-10.h-10.rounded-full.bg-blue-600, aside span.w-10.h-10.rounded-full');
-    avatars.forEach(avatar => {
-      (avatar as HTMLElement).style.backgroundColor = '#3b82f6';
-      (avatar as HTMLElement).style.color = 'white';
-      (avatar as HTMLElement).style.width = '40px';
-      (avatar as HTMLElement).style.height = '40px';
-      (avatar as HTMLElement).style.borderRadius = '50%';
-      (avatar as HTMLElement).style.display = 'flex';
-      (avatar as HTMLElement).style.alignItems = 'center';
-      (avatar as HTMLElement).style.justifyContent = 'center';
-      (avatar as HTMLElement).style.fontWeight = 'bold';
-      (avatar as HTMLElement).style.fontSize = '20px';
-    });
-  }, []);
-
   // Helper to clear all user-related localStorage keys
   function clearUserLocalStorage(email?: string) {
     if (!email || typeof window === "undefined") return;
@@ -83,7 +65,7 @@ export default function Sidebar() {
 
   return (
     <aside
-      className={`bg-white shadow-md border-r border-gray-200 flex flex-col transition-all duration-300 ${
+      className={`bg-white shadow-md border-r border-gray-200 flex flex-col transition-all duration-300 hidden lg:flex ${
         collapsed ? "w-20" : "w-64"
       }`}
     >
@@ -97,21 +79,7 @@ export default function Sidebar() {
                 className="w-10 h-10 rounded-full border-2 border-blue-600 object-cover"
               />
             ) : (
-              <span
-                className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xl"
-                style={{
-                  backgroundColor: "#3b82f6",
-                  color: "white",
-                  width: "40px",
-                  height: "40px",
-                  borderRadius: "50%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontWeight: "bold",
-                  fontSize: "20px",
-                }}
-              >
+              <span className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xl">
                 {session.user.name ? session.user.name.charAt(0) : "V"}
               </span>
             )}
@@ -143,7 +111,7 @@ export default function Sidebar() {
 
       <nav className="flex-1 py-4 px-2 space-y-2">
         {navLinks.map((link) => {
-          const isActive = pathname.startsWith(link.href);
+          const isActive = pathname?.startsWith(link.href) || false;
           const showBadge = link.href === "/quiz" && quizCount > 0;
           return (
             <Link
@@ -172,7 +140,7 @@ export default function Sidebar() {
         {isAuthenticated ? (
           <button
             onClick={() => {
-              clearUserLocalStorage(session.user.email);
+              clearUserLocalStorage(session?.user?.email || undefined);
               signOut();
             }}
             className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg font-medium transition-colors text-gray-700 hover:bg-red-100 hover:text-red-700 ${

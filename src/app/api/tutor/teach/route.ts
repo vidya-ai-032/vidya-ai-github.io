@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   const { content, summary, pdfFile, subject = "" } = body;
 
   let text = content;
-  let usedSummary = summary;
+  const usedSummary = summary;
 
   // If a PDF file is provided, extract its text
   if (pdfFile) {
@@ -37,10 +37,12 @@ export async function POST(req: NextRequest) {
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const content = await page.getTextContent();
-        pdfText += content.items.map((item: any) => item.str).join(" ") + "\n";
+        pdfText +=
+          content.items.map((item: { str: string }) => item.str).join(" ") +
+          "\n";
       }
       text = pdfText;
-    } catch (err) {
+    } catch (_err: unknown) {
       return NextResponse.json(
         { error: "Failed to extract PDF text." },
         { status: 500 }
@@ -77,20 +79,20 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     let message = "Unknown error";
     let details = null;
 
     if (error) {
       if (typeof error === "string") {
         message = error;
-      } else if (error.message) {
-        message = error.message;
+      } else if ((error as Error).message) {
+        message = (error as Error).message;
       } else {
         message = JSON.stringify(error);
       }
-      if (error.stack) {
-        details = error.stack;
+      if ((error as Error).stack) {
+        details = (error as Error).stack;
       } else {
         details = JSON.stringify(error);
       }

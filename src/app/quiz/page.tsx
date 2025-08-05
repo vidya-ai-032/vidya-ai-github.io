@@ -331,7 +331,7 @@ export default function QuizPage() {
     setError(null);
   };
 
-  const handleAttemptQuiz = async (topic: string, content: string) => {
+  const handleAttemptQuiz = async (topic: string, content: any) => {
     setLoading(true);
     setError(null);
     setQuiz(null);
@@ -644,23 +644,23 @@ export default function QuizPage() {
 
   return (
     <div
-      className="flex flex-col items-center justify-center min-h-screen px-2 sm:px-4"
+      className="flex flex-col items-center justify-center min-h-screen px-2 sm:px-4 py-4 sm:py-6"
       role="main"
       aria-label="Quiz page"
     >
       <h1
-        className="text-2xl sm:text-3xl font-bold mb-3 sm:mb-4 text-center"
+        className="text-xl sm:text-2xl lg:text-3xl font-bold mb-3 sm:mb-4 text-center"
         tabIndex={0}
       >
         Quiz
       </h1>
       {/* Render per-subtopic quizzes */}
       {Object.keys(perSubtopicQuizzes).length > 0 && (
-        <div className="w-full max-w-2xl mx-auto mb-8">
-          <h2 className="text-lg font-semibold mb-2">
+        <div className="w-full max-w-2xl mx-auto mb-6 sm:mb-8">
+          <h2 className="text-base sm:text-lg font-semibold mb-2">
             Generated Quizzes by Topic
           </h2>
-          <ul className="space-y-6">
+          <ul className="space-y-4 sm:space-y-6">
             {Object.entries(perSubtopicQuizzes).map(([subtopic, quiz], idx) => {
               const isExpanded = expandedQuizCards[subtopic];
               const answers = perSubtopicQuizAnswers[subtopic] || {};
@@ -669,13 +669,13 @@ export default function QuizPage() {
               return (
                 <li
                   key={subtopic}
-                  className="bg-green-50 border border-green-200 rounded-xl p-4 flex flex-col relative mb-4"
+                  className="bg-green-50 border border-green-200 rounded-xl p-3 sm:p-4 flex flex-col relative mb-4"
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="font-bold text-green-800 text-base">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-2 sm:gap-0">
+                    <div className="font-bold text-green-800 text-sm sm:text-base">
                       {subtopic}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <button
                         className="text-green-700 hover:text-green-900 text-xs font-semibold px-2 py-1 border border-green-200 rounded"
                         onClick={() =>
@@ -717,11 +717,11 @@ export default function QuizPage() {
                         handlePerSubtopicQuizSubmit(subtopic, quiz);
                       }}
                     >
-                      <ul className="space-y-4">
+                      <ul className="space-y-3 sm:space-y-4">
                         {quiz.questions.map((q: any, i: number) => (
                           <li
                             key={i}
-                            className="bg-white rounded shadow p-3 border border-green-100"
+                            className="bg-white rounded shadow p-2 sm:p-3 border border-green-100"
                           >
                             <div className="font-semibold text-gray-900 mb-1">
                               Q{i + 1}. {q.question}
@@ -778,7 +778,7 @@ export default function QuizPage() {
                       {!submitted && (
                         <button
                           type="submit"
-                          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg text-base sm:text-lg font-semibold hover:shadow-xl transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 mt-4"
+                          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg text-sm sm:text-base lg:text-lg font-semibold hover:shadow-xl transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 mt-4"
                           aria-label="Submit Quiz"
                         >
                           Submit Quiz
@@ -802,22 +802,24 @@ export default function QuizPage() {
           {/* Analytics section */}
           {analytics && (
             <div
-              className="w-full max-w-xl mx-auto bg-blue-50 border border-blue-200 rounded-xl p-4 text-blue-900 flex justify-between mb-6"
+              className="w-full max-w-xl mx-auto bg-blue-50 border border-blue-200 rounded-xl p-3 sm:p-4 text-blue-900 flex flex-col sm:flex-row justify-between mb-6"
               aria-label="Quiz analytics"
               role="region"
               aria-live="polite"
             >
               <div>
-                <div className="font-bold text-lg">Your Quiz Analytics</div>
-                <div className="text-sm mt-1">
+                <div className="font-bold text-base sm:text-lg">
+                  Your Quiz Analytics
+                </div>
+                <div className="text-xs sm:text-sm mt-1">
                   Total quizzes:{" "}
                   <span className="font-semibold">{analytics.total}</span>
                 </div>
-                <div className="text-sm">
+                <div className="text-xs sm:text-sm">
                   Average score:{" "}
                   <span className="font-semibold">{analytics.avg}</span>
                 </div>
-                <div className="text-sm">
+                <div className="text-xs sm:text-sm">
                   Best score:{" "}
                   <span className="font-semibold">{analytics.best}</span>
                 </div>
@@ -825,7 +827,7 @@ export default function QuizPage() {
             </div>
           )}
           {/* Topic selection UI */}
-          <div className="w-full max-w-xl mx-auto mb-6">
+          <div className="w-full max-w-xl mx-auto mb-4 sm:mb-6">
             <label
               htmlFor="topic-select"
               className="block text-sm font-medium text-gray-700 mb-2"
@@ -870,11 +872,14 @@ export default function QuizPage() {
           </div>
           {/* Quiz History section */}
           <div
-            className="w-full max-w-xl mx-auto mb-8"
+            className="w-full max-w-xl mx-auto mb-6 sm:mb-8"
             role="region"
             aria-label="Quiz history"
           >
-            <h2 className="text-lg font-semibold mb-2" tabIndex={0}>
+            <h2
+              className="text-base sm:text-lg font-semibold mb-2"
+              tabIndex={0}
+            >
               Quiz History
             </h2>
             {quizHistory.length === 0 ? (
@@ -888,20 +893,20 @@ export default function QuizPage() {
                 {quizHistory.map((q) => (
                   <li
                     key={q.date}
-                    className="py-3 flex items-center justify-between"
+                    className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0"
                     tabIndex={0}
                     role="listitem"
                     aria-label={`Quiz on ${q.topicLabel} at ${q.date}`}
                   >
                     <div>
-                      <div className="font-medium text-gray-900">
+                      <div className="font-medium text-gray-900 text-sm sm:text-base">
                         {q.topicLabel}
                       </div>
                       <div className="text-xs text-gray-500">
                         {new Date(q.date).toLocaleString()}
                       </div>
                     </div>
-                    <div className="flex items-center space-x-4">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-4">
                       <span className="text-sm text-blue-700 font-semibold">
                         Score: {q.totalScore}
                       </span>
@@ -939,7 +944,7 @@ export default function QuizPage() {
           </div>
           <button
             onClick={generateQuiz}
-            className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg text-base sm:text-lg font-semibold hover:shadow-xl transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg text-sm sm:text-base lg:text-lg font-semibold hover:shadow-xl transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             disabled={loading}
             aria-label="Generate Quiz"
             tabIndex={0}
@@ -956,11 +961,14 @@ export default function QuizPage() {
       {quiz && (
         <form
           onSubmit={handleSubmit}
-          className="w-full max-w-xl mt-6"
+          className="w-full max-w-xl mt-4 sm:mt-6"
           aria-label="Quiz form"
         >
           {quiz.questions.map((q, idx) => (
-            <div key={idx} className="mb-6 p-4 bg-gray-50 rounded-xl shadow-sm">
+            <div
+              key={idx}
+              className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gray-50 rounded-xl shadow-sm"
+            >
               <div className="font-semibold mb-2">
                 Q{idx + 1}. {q.question}
               </div>
@@ -1050,7 +1058,7 @@ export default function QuizPage() {
           {quiz.questions.length > 0 && !submitted && (
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg text-base sm:text-lg font-semibold hover:shadow-xl transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg text-sm sm:text-base lg:text-lg font-semibold hover:shadow-xl transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
               aria-label="Submit Quiz"
             >
               Submit Quiz

@@ -9,7 +9,7 @@ export default function TeachPage() {
           Teach Me This feature has been removed.
         </h2>
         <p>
-          We're starting over! Please specify your new requirements for the
+          We&apos;re starting over! Please specify your new requirements for the
           teaching/tutor feature.
         </p>
       </div>

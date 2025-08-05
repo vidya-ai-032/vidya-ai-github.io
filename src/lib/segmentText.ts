@@ -5,6 +5,7 @@ export interface Subtopic {
   summary: string;
   keyPoints: string[];
   subtopics?: Subtopic[];
+  estimatedTime?: string;
 }
 
 /**

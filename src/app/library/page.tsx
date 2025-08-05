@@ -1,7 +1,7 @@
 "use client";
 import { useSession, signIn } from "next-auth/react";
 import { useEffect, useState } from "react";
-import { FaTrash } from "react-icons/fa";
+// import { FaTrash } from "react-icons/fa"; // Removed unused import
 
 interface LibraryDoc {
   name: string;
@@ -21,6 +21,7 @@ interface Subtopic {
   subject?: string;
   rawContent?: string;
   subtopics?: Subtopic[];
+  estimatedTime?: string;
 }
 
 const getSubtopicsKey = (email: string, docName: string) =>
@@ -35,8 +36,19 @@ export default function LibraryPage() {
   const [expanded, setExpanded] = useState<
     Record<string, { subtopics: boolean; quiz: boolean; qa: boolean }>
   >({});
-  const [docQuiz, setDocQuiz] = useState<Record<string, any>>({});
-  const [docQA, setDocQA] = useState<Record<string, any>>({});
+  const [docQuiz, setDocQuiz] = useState<
+    Record<
+      string,
+      { questions?: Array<{ question: string; options?: string[] }> }
+    >
+  >({});
+  const [docQA, setDocQA] = useState<
+    Record<
+      string,
+      { questions?: Array<{ question: string; options?: string[] }> }
+    >
+  >({});
+  const [loadingQuizDoc, setLoadingQuizDoc] = useState<string | null>(null);
 
   // Load expanded state from localStorage
   useEffect(() => {
@@ -66,7 +78,7 @@ export default function LibraryPage() {
     const subtopicsMap: Record<string, Subtopic[]> = {};
     const docs = JSON.parse(data || "[]");
     docs.forEach((doc: LibraryDoc) => {
-      const key = getSubtopicsKey(session.user.email, doc.name);
+      const key = getSubtopicsKey(session?.user?.email || "", doc.name);
       const subData = localStorage.getItem(key);
       if (subData) subtopicsMap[doc.name] = JSON.parse(subData);
     });
@@ -80,7 +92,7 @@ export default function LibraryPage() {
       const subtopicsMap: Record<string, Subtopic[]> = {};
       const docs = JSON.parse(data || "[]");
       docs.forEach((doc: LibraryDoc) => {
-        const key = getSubtopicsKey(session.user.email, doc.name);
+        const key = getSubtopicsKey(session?.user?.email || "", doc.name);
         const subData = localStorage.getItem(key);
         if (subData) subtopicsMap[doc.name] = JSON.parse(subData);
       });
@@ -100,7 +112,10 @@ export default function LibraryPage() {
     localStorage.setItem(key, JSON.stringify(updated));
     console.log("[LIBRARY] Deleted from localStorage:", key, docToDelete);
     // Remove subtopics
-    const subKey = getSubtopicsKey(session.user.email, docToDelete.name);
+    const subKey = getSubtopicsKey(
+      session?.user?.email || "",
+      docToDelete.name
+    );
     localStorage.removeItem(subKey);
     setDocSubtopics((prev) => {
       const copy = { ...prev };
@@ -155,23 +170,25 @@ export default function LibraryPage() {
         }));
       }
       // Save to localStorage
-      const key = getSubtopicsKey(session.user.email, doc.name);
+      const key = getSubtopicsKey(session?.user?.email || "", doc.name);
       localStorage.setItem(key, JSON.stringify(newTopics));
       setDocSubtopics((prev) => ({ ...prev, [doc.name]: newTopics }));
       alert("Subtopics generated!");
-    } catch (err) {
+    } catch (_err) {
       alert("Failed to generate subtopics.");
     }
   };
 
   // Quiz/Q&A state and handlers (toggle and persist)
   const handleGenerateQuiz = async (doc: LibraryDoc) => {
+    setLoadingQuizDoc(doc.name);
     const docKey = doc.name;
     if (expanded[docKey]?.quiz) {
       setExpanded((prev) => ({
         ...prev,
         [docKey]: { ...prev[docKey], quiz: false },
       }));
+      setLoadingQuizDoc(null);
       return;
     }
     setExpanded((prev) => ({
@@ -192,8 +209,10 @@ export default function LibraryPage() {
       if (!res.ok || !data.quiz)
         throw new Error(data.error || "Failed to generate quiz");
       setDocQuiz((prev) => ({ ...prev, [doc.name]: data.quiz }));
-    } catch (err) {
+    } catch (_err) {
       alert("Failed to generate quiz.");
+    } finally {
+      setLoadingQuizDoc(null);
     }
   };
 
@@ -226,7 +245,7 @@ export default function LibraryPage() {
       if (!res.ok || !data.quiz)
         throw new Error(data.error || "Failed to generate Q&A");
       setDocQA((prev) => ({ ...prev, [doc.name]: data.quiz }));
-    } catch (err) {
+    } catch (_err) {
       alert("Failed to generate Q&A.");
     }
   };
@@ -328,8 +347,11 @@ export default function LibraryPage() {
                             <button
                               className="flex-1 bg-gradient-to-r from-green-600 to-blue-600 text-white px-3 py-1 rounded font-semibold hover:shadow-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-green-500 text-xs cursor-pointer"
                               onClick={() => handleGenerateQuiz(doc)}
+                              disabled={loadingQuizDoc === doc.name}
                             >
-                              Generate Quiz
+                              {loadingQuizDoc === doc.name
+                                ? "Generating..."
+                                : "Generate Quiz"}
                             </button>
                             <button
                               className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 py-1 rounded font-semibold hover:shadow-lg transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-500 text-xs cursor-pointer"
@@ -387,11 +409,18 @@ export default function LibraryPage() {
                                 />
                               </div>
                               {/* Render quiz questions here, e.g. as a list */}
-                              {docQuiz[doc.name].questions &&
-                                docQuiz[doc.name].questions.length > 0 && (
+                              {docQuiz[doc.name]?.questions &&
+                                (docQuiz[doc.name]?.questions?.length || 0) >
+                                  0 && (
                                   <ul className="list-decimal pl-5 text-gray-700 text-sm space-y-2">
-                                    {docQuiz[doc.name].questions.map(
-                                      (q: any, i: number) => (
+                                    {docQuiz[doc.name]?.questions?.map(
+                                      (
+                                        q: {
+                                          question: string;
+                                          options?: string[];
+                                        },
+                                        i: number
+                                      ) => (
                                         <li key={i} className="break-words">
                                           <div className="font-medium">
                                             {q.question}
@@ -419,11 +448,18 @@ export default function LibraryPage() {
                                 Subjective QA
                               </div>
                               {/* Render Q&A questions here, e.g. as a list */}
-                              {docQA[doc.name].questions &&
-                                docQA[doc.name].questions.length > 0 && (
+                              {docQA[doc.name]?.questions &&
+                                (docQA[doc.name]?.questions?.length || 0) >
+                                  0 && (
                                   <ul className="list-decimal pl-5 text-gray-700 text-sm space-y-2">
-                                    {docQA[doc.name].questions.map(
-                                      (q: any, i: number) => (
+                                    {docQA[doc.name]?.questions?.map(
+                                      (
+                                        q: {
+                                          question: string;
+                                          options?: string[];
+                                        },
+                                        i: number
+                                      ) => (
                                         <li key={i} className="break-words">
                                           <div className="font-medium">
                                             {q.question}

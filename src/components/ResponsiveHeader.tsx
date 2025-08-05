@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useSession, signIn, signOut } from "next-auth/react";
 
@@ -16,43 +16,41 @@ const navLinks = [
 export default function ResponsiveHeader() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const isAuthenticated = status === "authenticated";
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
-  // Force apply styles after component mounts
+  // Close mobile menu when clicking outside or pressing Escape
   useEffect(() => {
-    // Force navigation spacing
-    const navLinks = document.querySelectorAll(
-      "header nav a, header nav button, .nav-container a, .nav-container button, nav a, nav button"
-    );
-    navLinks.forEach((link) => {
-      (link as HTMLElement).style.marginRight = "12px";
-      (link as HTMLElement).style.marginLeft = "0";
-      (link as HTMLElement).style.whiteSpace = "nowrap";
-      (link as HTMLElement).style.display = "inline-block";
-    });
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        mobileMenuRef.current &&
+        !mobileMenuRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false);
+      }
+    };
 
-    // Force blue logo
-    const logos = document.querySelectorAll(
-      'a[href="/"], .logo, header a[href="/"], .w-10.h-10.bg-blue-500, .w-10.h-10.rounded-lg.bg-blue-500'
-    );
-    logos.forEach((logo) => {
-      (logo as HTMLElement).style.backgroundColor = "#3b82f6";
-      (logo as HTMLElement).style.color = "white";
-      (logo as HTMLElement).style.width = "40px";
-      (logo as HTMLElement).style.height = "40px";
-      (logo as HTMLElement).style.borderRadius = "8px";
-      (logo as HTMLElement).style.display = "flex";
-      (logo as HTMLElement).style.alignItems = "center";
-      (logo as HTMLElement).style.justifyContent = "center";
-      (logo as HTMLElement).style.fontWeight = "bold";
-      (logo as HTMLElement).style.fontSize = "20px";
-    });
-  }, []);
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpen(false);
+      }
+    };
+
+    if (open) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleEscape);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [open]);
 
   return (
     <header
-      className="bg-white sticky top-0 z-50"
+      className="bg-white sticky top-0 z-50 shadow-sm"
       role="banner"
       aria-label="Site header"
     >
@@ -63,18 +61,6 @@ export default function ResponsiveHeader() {
               href="/"
               className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-xl hover:bg-blue-600 transition-colors shadow-sm logo"
               aria-label="Home"
-              style={{
-                backgroundColor: "#3b82f6",
-                color: "white",
-                width: "40px",
-                height: "40px",
-                borderRadius: "8px",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontWeight: "bold",
-                fontSize: "20px",
-              }}
             >
               V
             </Link>
@@ -86,7 +72,6 @@ export default function ResponsiveHeader() {
           <nav
             className="hidden md:flex items-center nav-container"
             aria-label="Main navigation"
-            style={{ display: "flex", alignItems: "center", gap: "12px" }}
           >
             {navLinks.map((link) => {
               const isActive = pathname === link.href;
@@ -94,17 +79,11 @@ export default function ResponsiveHeader() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap nav-link ${
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap nav-link mr-3 ${
                     isActive
                       ? "bg-blue-500 text-white"
                       : "text-gray-700 hover:bg-blue-100 hover:text-blue-500"
                   }`}
-                  style={{
-                    marginRight: "12px",
-                    whiteSpace: "nowrap",
-                    display: "inline-block",
-                    marginLeft: "0",
-                  }}
                 >
                   {link.label}
                 </Link>
@@ -130,7 +109,7 @@ export default function ResponsiveHeader() {
           <div className="md:hidden flex items-center">
             <button
               onClick={() => setOpen(!open)}
-              className="p-2 rounded-lg text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="p-2 rounded-lg text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 hover:bg-blue-50 transition-colors"
               aria-label={open ? "Close menu" : "Open menu"}
               aria-expanded={open}
             >
@@ -162,49 +141,57 @@ export default function ResponsiveHeader() {
       </div>
 
       {open && (
-        <nav
-          className="md:hidden bg-white px-4 pb-4 pt-2 space-y-1"
-          aria-label="Mobile navigation"
-        >
-          {navLinks.map((link) => {
-            const isActive = pathname === link.href;
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setOpen(false)}
-                className={`block px-3 py-2 rounded-lg text-base font-medium transition-colors ${
-                  isActive
-                    ? "bg-blue-600 text-white"
-                    : "text-gray-700 hover:bg-blue-100 hover:text-blue-700"
-                }`}
+        <>
+          <div
+            className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+            onClick={() => setOpen(false)}
+            aria-hidden="true"
+          />
+          <nav
+            ref={mobileMenuRef}
+            className="md:hidden bg-white px-4 pb-4 pt-2 space-y-1 border-t border-gray-200 shadow-lg relative z-50"
+            aria-label="Mobile navigation"
+          >
+            {navLinks.map((link) => {
+              const isActive = pathname === link.href;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setOpen(false)}
+                  className={`block px-3 py-2 rounded-lg text-base font-medium transition-colors ${
+                    isActive
+                      ? "bg-blue-600 text-white"
+                      : "text-gray-700 hover:bg-blue-100 hover:text-blue-700"
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
+            {isAuthenticated ? (
+              <button
+                onClick={() => {
+                  signOut();
+                  setOpen(false);
+                }}
+                className="w-full text-left block px-3 py-2 rounded-lg text-base font-medium text-gray-700 hover:bg-red-100 hover:text-red-700 transition-colors"
               >
-                {link.label}
-              </Link>
-            );
-          })}
-          {isAuthenticated ? (
-            <button
-              onClick={() => {
-                signOut();
-                setOpen(false);
-              }}
-              className="w-full text-left block px-3 py-2 rounded-lg text-base font-medium text-gray-700 hover:bg-red-100 hover:text-red-700 transition-colors"
-            >
-              Sign Out
-            </button>
-          ) : (
-            <button
-              onClick={() => {
-                signIn("google", { prompt: "select_account" });
-                setOpen(false);
-              }}
-              className="w-full text-left block px-3 py-2 rounded-lg text-base font-medium bg-blue-400 text-white hover:bg-blue-500 transition-colors"
-            >
-              Sign In
-            </button>
-          )}
-        </nav>
+                Sign Out
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  signIn("google", { prompt: "select_account" });
+                  setOpen(false);
+                }}
+                className="w-full text-left block px-3 py-2 rounded-lg text-base font-medium bg-blue-400 text-white hover:bg-blue-500 transition-colors"
+              >
+                Sign In
+              </button>
+            )}
+          </nav>
+        </>
       )}
     </header>
   );

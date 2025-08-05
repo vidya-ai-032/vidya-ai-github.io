@@ -17,15 +17,15 @@ export async function POST(request: NextRequest) {
     const response = await result.response;
     const answer = response.text().trim();
     return NextResponse.json({ answer });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error generating answer:", error);
     return NextResponse.json(
       {
         error: "Failed to generate answer",
         userMessage:
-          error?.message ||
+          (error as Error)?.message ||
           "Could not generate answer. Please try again later.",
-        details: error?.stack || String(error),
+        details: (error as Error)?.stack || String(error),
       },
       { status: 500 }
     );

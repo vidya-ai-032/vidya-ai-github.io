@@ -3,84 +3,92 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
-import Image from "next/image";
+// import Image from "next/image"; // Removed unused import
 // Remove: import { extractPdfText } from "@/lib/pdfExtract";
 import { segmentTextToSubtopics, Subtopic } from "@/lib/segmentText";
 import { GeminiService } from "@/lib/gemini";
 import React from "react";
 import { FaTrash } from "react-icons/fa";
-import VoiceLoopDemo from "./VoiceLoopDemo";
+// import VoiceLoopDemo from "./VoiceLoopDemo"; // Removed unused import
 
-const getSubtopicsKey = (email, docName) =>
+const getSubtopicsKey = (email: string, docName: string) =>
   `vidyaai_subtopics_${email}_${docName}`;
 
-function SubjectThemesModal({
-  open,
-  subject,
-  themes,
-  onChange,
-  onConfirm,
-  onCancel,
-  loading,
-}) {
-  const [localSubject, setLocalSubject] = React.useState(subject || "");
-  const [localThemes, setLocalThemes] = React.useState(themes || []);
-  React.useEffect(() => {
-    setLocalSubject(subject || "");
-    setLocalThemes(themes || []);
-  }, [subject, themes]);
-  if (!open) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-      <div className="bg-white rounded-xl shadow-2xl p-6 max-w-lg w-full relative animate-fadeIn">
-        <button
-          className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-xl font-bold"
-          onClick={onCancel}
-          aria-label="Close subject/themes modal"
-        >
-          ×
-        </button>
-        <h2 className="text-xl font-bold mb-2 text-blue-700">
-          Detected Subject & Themes
-        </h2>
-        <div className="mb-4">
-          <label className="block font-semibold mb-1">Main Subject:</label>
-          <input
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-2"
-            value={localSubject}
-            onChange={(e) => setLocalSubject(e.target.value)}
-            disabled={loading}
-          />
-          <label className="block font-semibold mb-1">
-            Core Themes (one per line):
-          </label>
-          <textarea
-            className="w-full border border-gray-300 rounded-lg px-3 py-2"
-            rows={3}
-            value={localThemes.join("\n")}
-            onChange={(e) => setLocalThemes(e.target.value.split(/\r?\n/))}
-            disabled={loading}
-          />
-        </div>
-        <div className="flex gap-2 mt-4">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 rounded bg-gray-200 text-gray-700 font-semibold"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => onConfirm(localSubject, localThemes)}
-            className="px-4 py-2 rounded bg-blue-600 text-white font-semibold"
-            disabled={loading}
-          >
-            {loading ? "Extracting..." : "Confirm & Extract Topics"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+// function SubjectThemesModal({
+//   open,
+//   subject,
+//   themes,
+//   // onChange,
+//   onConfirm,
+//   onCancel,
+//   loading,
+// }: {
+//   open: boolean;
+//   subject?: string;
+//   themes?: string[];
+//   onChange?: (subject: string, themes: string[]) => void;
+//   onConfirm: (subject: string, themes: string[]) => void;
+//   onCancel: () => void;
+//   loading: boolean;
+// }) {
+//   const [localSubject, setLocalSubject] = React.useState(subject || "");
+//   const [localThemes, setLocalThemes] = React.useState(themes || []);
+//   React.useEffect(() => {
+//     setLocalSubject(subject || "");
+//     setLocalThemes(themes || []);
+//   }, [subject, themes]);
+//   if (!open) return null;
+//   return (
+//     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+//       <div className="bg-white rounded-xl shadow-2xl p-6 max-w-lg w-full relative animate-fadeIn">
+//         <button
+//           className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-xl font-bold"
+//           onClick={onCancel}
+//           aria-label="Close subject/themes modal"
+//         >
+//           ×
+//         </button>
+//         <h2 className="text-xl font-bold mb-2 text-blue-700">
+//           Detected Subject & Themes
+//         </h2>
+//         <div className="mb-4">
+//           <label className="block font-semibold mb-1">Main Subject:</label>
+//           <input
+//             className="w-full border border-gray-300 rounded-lg px-3 py-2 mb-2"
+//             value={localSubject}
+//             onChange={(e) => setLocalSubject(e.target.value)}
+//             disabled={loading}
+//           />
+//           <label className="block font-semibold mb-1">
+//             Core Themes (one per line):
+//           </label>
+//           <textarea
+//             className="w-full border border-gray-300 rounded-lg px-3 py-2"
+//             rows={3}
+//             value={localThemes.join("\n")}
+//             onChange={(e) => setLocalThemes(e.target.value.split(/\r?\n/))}
+//             disabled={loading}
+//           />
+//         </div>
+//         <div className="flex gap-2 mt-4">
+//           <button
+//             onClick={onCancel}
+//             className="px-4 py-2 rounded bg-gray-200 text-gray-700 font-semibold"
+//           >
+//             Cancel
+//           </button>
+//           <button
+//             onClick={() => onConfirm(localSubject, localThemes)}
+//             className="px-4 py-2 rounded bg-blue-600 text-white font-semibold"
+//             disabled={loading}
+//           >
+//             {loading ? "Extracting..." : "Confirm & Extract Topics"}
+//           </button>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
 
 function AITutorModal({
   open,
@@ -90,19 +98,27 @@ function AITutorModal({
   onUserMessage,
   userInput,
   setUserInput,
+}: {
+  open: boolean;
+  onClose: () => void;
+  loading: boolean;
+  conversation: ConversationMessage[];
+  onUserMessage: (message: string) => void;
+  userInput: string;
+  setUserInput: (input: string) => void;
 }) {
   if (!open) return null;
 
   // Defensive check for conversation array
   const safeConversation = Array.isArray(conversation) ? conversation : [];
 
-  const handleFollowUpClick = (question) => {
-    if (typeof onUserMessage === "function") {
-      onUserMessage(question);
-    }
-  };
+  // const handleFollowUpClick = (question: string) => {
+  //   if (typeof onUserMessage === "function") {
+  //     onUserMessage(question);
+  //   }
+  // };
 
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (userInput && userInput.trim() && typeof onUserMessage === "function") {
       onUserMessage(userInput);
@@ -110,8 +126,8 @@ function AITutorModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 transition-opacity duration-300">
-      <div className="bg-white rounded-xl shadow-2xl p-6 max-w-2xl w-full relative transform transition-all duration-300 scale-95 opacity-0 animate-scale-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 transition-opacity duration-300 p-4">
+      <div className="bg-white rounded-xl shadow-2xl p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto relative transform transition-all duration-300 scale-95 opacity-0 animate-scale-in">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-xl font-bold text-gray-900">AI Tutor</h2>
           <button
@@ -198,8 +214,6 @@ const ACCEPTED_TYPES = [
   "image/png",
 ];
 
-// Removed local Subtopic interface declaration
-
 interface Topic {
   label: string;
   title: string;
@@ -220,6 +234,25 @@ interface LibraryDoc {
   chapter: string;
   rawContent: string;
   content?: string;
+}
+
+interface ConversationMessage {
+  role: string;
+  content: string;
+  suggestions?: string[];
+  followUpQuestions?: string[];
+}
+
+interface TutorModalState {
+  open: boolean;
+  loading: boolean;
+  response: string;
+  suggestions: string[];
+  followUps: string[];
+  ttsPlaying: boolean;
+  ttsUtter: SpeechSynthesisUtterance | null;
+  conversation: ConversationMessage[];
+  userInput: string;
 }
 
 function SubtopicCard({
@@ -244,7 +277,7 @@ function SubtopicCard({
   onDelete?: () => void;
   subject?: string;
   rawContent?: string;
-  setTutorModal: React.Dispatch<React.SetStateAction<any>>;
+  setTutorModal: React.Dispatch<React.SetStateAction<TutorModalState>>;
   expandedCardId?: string | null;
   setExpandedCardId?: (id: string | null) => void;
   quizAnswers: Record<string, Record<number, string>>;
@@ -266,7 +299,7 @@ function SubtopicCard({
   const [teachError, setTeachError] = useState<string | null>(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
-  const utterRef = useRef<SpeechSynthesisUtterance | null>(null);
+  // const utterRef = useRef<SpeechSynthesisUtterance | null>(null); // Removed unused variable
   const [quiz, setQuiz] = useState<any | null>(null);
   const [quizExpanded, setQuizExpanded] = useState(false);
   const [qa, setQa] = useState<any | null>(null);
@@ -275,7 +308,9 @@ function SubtopicCard({
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
   const interruptedRef = useRef(false);
-  const [conversation, setConversation] = useState([]); // For displaying conversation history
+  const [conversation, setConversation] = useState<
+    Array<{ role: string; text: string }>
+  >([]); // For displaying conversation history in UI
 
   // Only allow one expanded card at a time
   useEffect(() => {
@@ -569,76 +604,76 @@ function SubtopicCard({
   };
 
   // Add a function to start voice recognition for follow-up questions
-  const handleStartListening = () => {
-    if (!("webkitSpeechRecognition" in window)) {
-      alert("Speech recognition not supported in this browser.");
-      return;
-    }
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      recognitionRef.current = null;
-      setIsListening(false);
-      return;
-    }
-    const recognition = new (window as any).webkitSpeechRecognition();
-    recognition.lang = "en-US";
-    recognition.interimResults = false;
-    recognition.maxAlternatives = 1;
-    recognition.onresult = async (event: any) => {
-      const transcript = event.results[0][0].transcript.trim();
-      setIsListening(false);
-      if (transcript.toLowerCase().includes("stop")) {
-        handleStop();
-        return;
-      }
-      // Send follow-up question to Gemini
-      setLoadingButton("teach");
-      try {
-        const context =
-          topic.summary +
-          (topic.keyPoints?.length ? "\n" + topic.keyPoints.join(" ") : "");
-        const userMessage = transcript;
-        const res = await fetch("/api/tutor/followup", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            question: userMessage,
-            context,
-            conversationHistory: [],
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Failed to get explanation");
-        setTeachData(data);
-        // Speak the new response and prompt again
-        speakAndMaybeListen(data.response, () =>
-          handleGeminiLoop(
-            "Do you have any more questions or doubts? Just speak your question or say 'stop' to end."
-          )
-        );
-      } catch (err: any) {
-        setTeachError(err.message || "Unknown error");
-      } finally {
-        setLoadingButton(null);
-      }
-    };
-    recognition.onerror = () => setIsListening(false);
-    recognition.onend = () => setIsListening(false);
-    recognition.start();
-    recognitionRef.current = recognition;
-    setIsListening(true);
-  };
+  // const handleStartListening = () => {
+  //   if (!("webkitSpeechRecognition" in window)) {
+  //     alert("Speech recognition not supported in this browser.");
+  //     return null;
+  //   }
+  //   if (recognitionRef.current) {
+  //     recognitionRef.current.stop();
+  //     recognitionRef.current = null;
+  //     setIsListening(false);
+  //     return null;
+  //   }
+  //   const recognition = new (window as any).webkitSpeechRecognition();
+  //   recognition.lang = "en-US";
+  //   recognition.interimResults = false;
+  //   recognition.maxAlternatives = 1;
+  //   recognition.onresult = async (event: any) => {
+  //     const transcript = event.results[0][0].transcript.trim();
+  //     setIsListening(false);
+  //     if (transcript.toLowerCase().includes("stop")) {
+  //       handleStop();
+  //       return;
+  //     }
+  //     // Send follow-up question to Gemini
+  //     setLoadingButton("teach");
+  //     try {
+  //       const context =
+  //         topic.summary +
+  //         (topic.keyPoints?.length ? "\n" + topic.keyPoints.join(" ") : "");
+  //       const userMessage = transcript;
+  //       const res = await fetch("/api/tutor/followup", {
+  //         method: "POST",
+  //         headers: { "Content-Type": "application/json" },
+  //         body: JSON.stringify({
+  //           question: userMessage,
+  //           context,
+  //           conversationHistory: [],
+  //         }),
+  //       });
+  //       const data = await res.json();
+  //       if (!res.ok) throw new Error(data.error || "Failed to get explanation");
+  //       setTeachData(data);
+  //       // Speak the new response and prompt again
+  //       speakAndMaybeListen(data.response, () =>
+  //         handleGeminiLoop(
+  //           "Do you have any more questions or doubts? Just speak your question or say 'stop' to end."
+  //         )
+  //       );
+  //     } catch (err: any) {
+  //       setTeachError(err.message || "Unknown error");
+  //     } finally {
+  //       setLoadingButton(null);
+  //     }
+  //   };
+  //   recognition.onerror = () => setIsListening(false);
+  //   recognition.onend = () => setIsListening(false);
+  //   recognition.start();
+  //   recognitionRef.current = recognition;
+  //   setIsListening(true);
+  // };
 
   // Pause speech synthesis and set isPaused
-  const pauseTTS = () => {
-    if (typeof window !== "undefined" && window.speechSynthesis) {
-      window.speechSynthesis.pause();
-      setIsPaused(true);
-    }
-  };
+  // const pauseTTS = () => {
+  //   if (typeof window !== "undefined" && window.speechSynthesis) {
+  //     window.speechSynthesis.pause();
+  //     setIsPaused(true);
+  //   }
+  // };
 
   return (
-    <div className="relative bg-white border border-blue-100 rounded-lg p-4 mb-0 flex flex-col flex-1 min-w-0 shadow-sm hover:shadow-md transition-all duration-200 sm:p-5 break-words">
+    <div className="relative bg-white border border-blue-100 rounded-lg p-3 sm:p-4 lg:p-5 mb-0 flex flex-col flex-1 min-w-0 shadow-sm hover:shadow-md transition-all duration-200 break-words">
       {onDelete && (
         <button
           className="absolute top-2 right-2 bg-red-500 hover:bg-red-700 text-white px-3 py-1 rounded text-xs font-semibold"
@@ -649,7 +684,7 @@ function SubtopicCard({
       )}
 
       {/* Title */}
-      <div className="font-semibold text-blue-800 mb-2 text-base sm:text-lg break-words">
+      <div className="font-semibold text-blue-800 mb-2 text-sm sm:text-base lg:text-lg break-words">
         {topic.title}
       </div>
 
@@ -695,9 +730,9 @@ function SubtopicCard({
       )}
 
       {/* Action Buttons */}
-      <div className="mt-auto grid grid-cols-3 gap-2 print-hide">
+      <div className="mt-auto grid grid-cols-1 sm:grid-cols-3 gap-2 print-hide">
         <button
-          className={`px-3 py-2 bg-blue-400 text-white rounded-lg font-semibold hover:bg-blue-500 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 text-sm flex items-center justify-center ${
+          className={`px-2 sm:px-3 py-1 sm:py-2 bg-blue-400 text-white rounded-lg font-semibold hover:bg-blue-500 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 text-xs sm:text-sm flex items-center justify-center ${
             loadingButton === "quiz" ? "opacity-50 cursor-not-allowed" : ""
           }`}
           aria-label={`Generate quiz for ${topic.title}`}
@@ -750,7 +785,7 @@ function SubtopicCard({
         </button>
 
         <button
-          className={`px-3 py-2 bg-blue-400 text-white rounded-lg font-semibold hover:bg-blue-500 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 text-sm flex items-center justify-center ${
+          className={`px-2 sm:px-3 py-1 sm:py-2 bg-blue-400 text-white rounded-lg font-semibold hover:bg-blue-500 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 text-xs sm:text-sm flex items-center justify-center ${
             loadingButton === "qa" ? "opacity-50 cursor-not-allowed" : ""
           }`}
           aria-label={`Generate Q&A for ${topic.title}`}
@@ -829,7 +864,7 @@ function SubtopicCard({
                   userEmail: session.user.email,
                 };
                 const alreadyExists = historyArr.some(
-                  (q) =>
+                  (q: any) =>
                     q.topicLabel === newHistoryEntry.topicLabel &&
                     q.date === newHistoryEntry.date
                 );
@@ -863,7 +898,7 @@ function SubtopicCard({
         </button>
 
         <button
-          className={`px-3 py-2 bg-blue-400 text-white rounded-lg font-semibold hover:bg-blue-500 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 text-sm flex items-center justify-center ${
+          className={`px-2 sm:px-3 py-1 sm:py-2 bg-blue-400 text-white rounded-lg font-semibold hover:bg-blue-500 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 text-xs sm:text-sm flex items-center justify-center ${
             loadingButton === "teach" ? "opacity-50 cursor-not-allowed" : ""
           }`}
           aria-label={`Teach me this topic: ${topic.title}`}
@@ -1016,18 +1051,18 @@ function SubtopicCard({
               <div className="flex gap-2 mt-4">
                 <button
                   className="bg-green-600 text-white px-3 py-1 rounded"
-                  onClick={() => teachData && speakText(teachData.response)}
+                  onClick={() => teachData && speak(teachData.response)}
                   disabled={isSpeaking}
                 >
                   Replay
                 </button>
-                <button
+                {/* <button
                   className="bg-yellow-500 text-white px-3 py-1 rounded"
                   onClick={pauseTTS}
                   disabled={!isSpeaking || isPaused}
                 >
                   Pause
-                </button>
+                </button> */}
                 {isSpeaking && (
                   <button
                     className="ml-2 px-3 py-1 bg-red-500 text-white rounded text-xs font-semibold"
@@ -1194,12 +1229,12 @@ export default function UploadPage() {
   const [error, setError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const router = useRouter();
+  // const router = useRouter(); // Removed unused variable
   const [extractedTopics, setExtractedTopics] = useState<Topic[]>([]);
   const [libraryDocs, setLibraryDocs] = useState<LibraryDoc[]>([]);
   const [docSubtopics, setDocSubtopics] = useState<Record<string, Topic[]>>({});
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const [tutorModal, setTutorModal] = useState({
+  const [tutorModal, setTutorModal] = useState<TutorModalState>({
     open: false,
     loading: false,
     response: "",
@@ -1211,24 +1246,24 @@ export default function UploadPage() {
     userInput: "",
   });
   // TTS controls
-  const playTTS = () => {
-    if (
-      tutorModal.response &&
-      typeof window !== "undefined" &&
-      window.speechSynthesis
-    ) {
-      if (tutorModal.ttsUtter) {
-        window.speechSynthesis.cancel();
-      }
-      const utter = new window.SpeechSynthesisUtterance(tutorModal.response);
-      utter.lang = "en-US";
-      utter.rate = 1;
-      utter.onend = () =>
-        setTutorModal((m) => ({ ...m, ttsPlaying: false, ttsUtter: null }));
-      window.speechSynthesis.speak(utter);
-      setTutorModal((m) => ({ ...m, ttsPlaying: true, ttsUtter: utter }));
-    }
-  };
+  // const playTTS = () => {
+  //   if (
+  //     tutorModal.response &&
+  //     typeof window !== "undefined" &&
+  //     window.speechSynthesis
+  //   ) {
+  //     if (tutorModal.ttsUtter) {
+  //       window.speechSynthesis.cancel();
+  //     }
+  //     const utter = new window.SpeechSynthesisUtterance(tutorModal.response);
+  //     utter.lang = "en-US";
+  //     utter.rate = 1;
+  //     utter.onend = () =>
+  //       setTutorModal((m) => ({ ...m, ttsPlaying: false, ttsUtter: null }));
+  //     window.speechSynthesis.speak(utter);
+  //     setTutorModal((m) => ({ ...m, ttsPlaying: true, ttsUtter: utter }));
+  //   }
+  // };
   const pauseTTS = () => {
     if (typeof window !== "undefined" && window.speechSynthesis) {
       window.speechSynthesis.pause();
@@ -1242,12 +1277,18 @@ export default function UploadPage() {
     }
   };
   // Handle user message (follow-up)
-  const handleUserMessage = async (msg) => {
+  const handleUserMessage = async (msg: string) => {
     if (!msg.trim()) return;
 
     const currentConversation = tutorModal.conversation || [];
-    const newConversation = [
-      ...currentConversation,
+    const newConversation: Array<{
+      role: "user" | "assistant";
+      content: string;
+    }> = [
+      ...currentConversation.map((msg) => ({
+        role: msg.role as "user" | "assistant",
+        content: msg.content,
+      })),
       { role: "user", content: msg },
     ];
 
@@ -1267,7 +1308,7 @@ export default function UploadPage() {
       );
 
       // Create a new message object for the assistant's response
-      const assistantMessage = {
+      const assistantMessage: ConversationMessage = {
         role: "assistant",
         content: tutorRes.response,
         suggestions: tutorRes.suggestions || [],
@@ -1350,9 +1391,9 @@ export default function UploadPage() {
   useEffect(() => {
     if (!session?.user?.email) return;
     const docs = libraryDocs.slice(0, 5);
-    const subtopicsMap = {};
+    const subtopicsMap: Record<string, any> = {};
     docs.forEach((doc) => {
-      const key = getSubtopicsKey(session.user.email, doc.name);
+      const key = getSubtopicsKey(session?.user?.email || "", doc.name);
       const data = localStorage.getItem(key);
       if (data) subtopicsMap[doc.name] = JSON.parse(data);
     });
@@ -1360,7 +1401,7 @@ export default function UploadPage() {
   }, [libraryDocs, session?.user?.email]);
 
   // Generate subtopics for a document
-  const handleGenerateSubtopics = async (doc) => {
+  const handleGenerateSubtopics = async (doc: LibraryDoc) => {
     if (!doc.rawContent) return alert("No content found for this document.");
     try {
       const payload = { content: doc.rawContent, subject: doc.subject || "" };
@@ -1381,7 +1422,7 @@ export default function UploadPage() {
       }
       let newTopics = [];
       if (topicData.topics) {
-        newTopics = topicData.topics.map((t) => ({
+        newTopics = topicData.topics.map((t: any) => ({
           label: t.title,
           title: t.title,
           content: t.summary + "\n" + t.keyPoints.join(" "),
@@ -1393,7 +1434,7 @@ export default function UploadPage() {
         }));
       }
       // Save to localStorage
-      const key = getSubtopicsKey(session.user.email, doc.name);
+      const key = getSubtopicsKey(session?.user?.email || "", doc.name);
       localStorage.setItem(key, JSON.stringify(newTopics));
       setDocSubtopics((prev) => ({ ...prev, [doc.name]: newTopics }));
       // Only show alert after user-initiated generation
@@ -1404,12 +1445,12 @@ export default function UploadPage() {
   };
 
   // Delete a document
-  const handleDeleteDoc = (doc) => {
+  const handleDeleteDoc = (doc: LibraryDoc) => {
     if (!session?.user?.email) return;
     // Remove from library
     const libraryKey = `vidyaai_library_${session.user.email}`;
     const prevLib = JSON.parse(localStorage.getItem(libraryKey) || "[]");
-    const updatedLib = prevLib.filter((d) => d.name !== doc.name);
+    const updatedLib = prevLib.filter((d: LibraryDoc) => d.name !== doc.name);
     localStorage.setItem(libraryKey, JSON.stringify(updatedLib));
     setLibraryDocs(updatedLib);
     // Remove subtopics
@@ -1535,7 +1576,7 @@ export default function UploadPage() {
         }
         let newTopics = [];
         if (topicData.topics) {
-          newTopics = topicData.topics.map((t) => ({
+          newTopics = topicData.topics.map((t: any) => ({
             label: t.title,
             title: t.title,
             content: t.summary + "\n" + t.keyPoints.join(" "),
@@ -1570,7 +1611,18 @@ export default function UploadPage() {
   // Removed handleSubjectConfirm function
 
   // Only show the most recent document in the upload page
-  const lastDoc = libraryDocs.length > 0 ? [libraryDocs[0]] : [];
+  // const lastDoc = libraryDocs.length > 0 ? [libraryDocs[0]] : []; // Removed unused variable
+
+  const [loadingQuizDoc, setLoadingQuizDoc] = useState<string | null>(null);
+
+  const handleGenerateQuiz = async (doc: LibraryDoc) => {
+    setLoadingQuizDoc(doc.name);
+    try {
+      // ... your quiz generation logic ...
+    } finally {
+      setLoadingQuizDoc(null);
+    }
+  };
 
   if (status !== "authenticated") {
     return (
@@ -1608,15 +1660,15 @@ export default function UploadPage() {
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col items-center justify-center py-8 px-2 sm:px-4 lg:px-8"
+      className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col items-center justify-center py-4 sm:py-6 lg:py-8 px-2 sm:px-4 lg:px-8"
       role="main"
       aria-label="Upload page"
     >
-      <div className="w-full max-w-7xl bg-white rounded-2xl shadow-lg p-4 sm:p-8 mx-auto">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3 sm:mb-4 text-center">
+      <div className="w-full max-w-7xl bg-white rounded-2xl shadow-lg p-3 sm:p-6 lg:p-8 mx-auto">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2 sm:mb-3 lg:mb-4 text-center">
           Upload Study Material
         </h1>
-        <p className="text-base sm:text-lg text-gray-600 mb-6 text-center">
+        <p className="text-sm sm:text-base lg:text-lg text-gray-600 mb-4 sm:mb-6 text-center">
           Supported formats: PDF, DOCX, TXT, JPG, PNG
         </p>
 
@@ -1631,11 +1683,11 @@ export default function UploadPage() {
           <div className="flex flex-col items-center justify-center w-full">
             <label
               htmlFor="file-upload"
-              className="w-full flex flex-col items-center justify-center px-4 py-6 bg-white border-2 border-blue-300 border-dashed rounded-lg cursor-pointer hover:bg-blue-50 transition-all duration-200"
+              className="w-full flex flex-col items-center justify-center px-3 sm:px-4 py-4 sm:py-6 bg-white border-2 border-blue-300 border-dashed rounded-lg cursor-pointer hover:bg-blue-50 transition-all duration-200"
             >
-              <div className="flex flex-col items-center justify-center pt-5 pb-6">
+              <div className="flex flex-col items-center justify-center pt-3 sm:pt-5 pb-4 sm:pb-6">
                 <svg
-                  className="w-10 h-10 mb-3 text-blue-400"
+                  className="w-8 h-8 sm:w-10 sm:h-10 mb-2 sm:mb-3 text-blue-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -1648,7 +1700,7 @@ export default function UploadPage() {
                     d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                   />
                 </svg>
-                <p className="mb-2 text-sm text-gray-500">
+                <p className="mb-2 text-xs sm:text-sm text-gray-500">
                   <span className="font-semibold">Click to upload</span> or drag
                   and drop
                 </p>
@@ -1716,7 +1768,7 @@ export default function UploadPage() {
           <button
             type="submit"
             disabled={!selectedFile || isUploading}
-            className="w-full py-3 px-4 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold text-base sm:text-lg shadow-md hover:from-blue-700 hover:to-blue-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 relative"
+            className="w-full py-2 sm:py-3 px-3 sm:px-4 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold text-sm sm:text-base lg:text-lg shadow-md hover:from-blue-700 hover:to-blue-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 relative"
           >
             {isUploading ? (
               <div className="flex items-center justify-center">
@@ -1766,8 +1818,8 @@ export default function UploadPage() {
               id="subtopics-section"
               className={
                 subtopicDisplayMode === "card"
-                  ? "grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3 print-content"
-                  : "flex flex-col gap-6 print-content"
+                  ? "grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 print-content"
+                  : "flex flex-col gap-4 sm:gap-6 print-content"
               }
             >
               {extractedTopics.map((t, i) => (
