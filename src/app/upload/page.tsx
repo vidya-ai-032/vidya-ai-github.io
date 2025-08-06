@@ -1660,17 +1660,18 @@ export default function UploadPage() {
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col items-center justify-center py-4 sm:py-6 lg:py-8 px-2 sm:px-4 lg:px-8"
+      className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4 sm:p-6 lg:p-8"
       role="main"
       aria-label="Upload page"
     >
-      <div className="w-full max-w-7xl bg-white rounded-2xl shadow-lg p-3 sm:p-6 lg:p-8 mx-auto">
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-2 sm:mb-3 lg:mb-4 text-center">
-          Upload Study Material
-        </h1>
-        <p className="text-sm sm:text-base lg:text-lg text-gray-600 mb-4 sm:mb-6 text-center">
-          Supported formats: PDF, DOCX, TXT, JPG, PNG
-        </p>
+      <div className="w-full max-w-7xl mx-auto">
+        <div className="card-modern p-6 lg:p-8 mb-8">
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4 text-center">
+            Upload Study Material
+          </h1>
+          <p className="text-lg text-gray-600 mb-8 text-center">
+            Supported formats: PDF, DOCX, TXT, JPG, PNG
+          </p>
 
         {/* Upload Form */}
         <form
@@ -1768,7 +1769,7 @@ export default function UploadPage() {
           <button
             type="submit"
             disabled={!selectedFile || isUploading}
-            className="w-full py-2 sm:py-3 px-3 sm:px-4 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold text-sm sm:text-base lg:text-lg shadow-md hover:from-blue-700 hover:to-blue-800 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 relative"
+            className="btn-modern w-full text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
           >
             {isUploading ? (
               <div className="flex items-center justify-center">
@@ -1785,7 +1786,7 @@ export default function UploadPage() {
         {extractedTopics.length > 0 && (
           <div className="mt-8">
             <div className="flex items-center justify-between mb-6 print-hide">
-              <h2 className="text-xl font-bold text-gray-900">
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
                 Extracted Topics
               </h2>
               <div className="flex gap-2 items-center">
@@ -1872,14 +1873,14 @@ export default function UploadPage() {
         {/* Recent Uploads */}
         {libraryDocs.slice(0, 5).length > 0 && (
           <div className="mt-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">
+            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">
               Recent Uploads
             </h2>
             <ul className="space-y-4">
               {libraryDocs.slice(0, 5).map((doc, i) => (
                 <li
                   key={doc.name + "-" + doc.date}
-                  className="bg-white rounded-lg border border-gray-200 p-4 flex flex-col gap-2"
+                  className="card-modern p-6 flex flex-col gap-4"
                 >
                   <div className="flex items-center justify-between">
                     <div>
@@ -1899,8 +1900,8 @@ export default function UploadPage() {
                           // If expanding, regenerate subtopics
                           if (!expanded[doc.name]) handleGenerateSubtopics(doc);
                         }}
-                        className={`bg-blue-600 text-white px-3 py-1 rounded font-semibold hover:bg-blue-700 transition-colors text-sm ${
-                          expanded[doc.name] ? "bg-blue-800" : ""
+                        className={`btn-modern text-sm px-4 py-2 ${
+                          expanded[doc.name] ? "bg-gradient-to-r from-blue-700 to-purple-700" : ""
                         }`}
                       >
                         {expanded[doc.name]

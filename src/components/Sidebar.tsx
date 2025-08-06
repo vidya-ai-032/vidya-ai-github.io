@@ -20,30 +20,6 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const pathname = usePathname();
 
-  // Helper to clear all user-related localStorage keys
-  function clearUserLocalStorage(email?: string) {
-    if (!email || typeof window === "undefined") return;
-    const keysToRemove = [
-      `vidyaai_quiz_history_${email}`,
-      `vidyaai_library_${email}`,
-      `vidyaai_library_expanded_${email}`,
-      `vidyaai_qa_history_${email}`,
-      `vidyaai_uploaded_topics_${email}`,
-      `vidyaai_last_quiz_result_${email}`,
-      // Remove all per-subtopic quiz keys
-    ];
-    // Remove per-subtopic quiz keys
-    Object.keys(localStorage).forEach((key) => {
-      if (
-        key.startsWith(`vidyaai_quiz_${email}_`) ||
-        key.startsWith(`vidyaai_subtopics_${email}_`)
-      ) {
-        localStorage.removeItem(key);
-      }
-    });
-    keysToRemove.forEach((key) => localStorage.removeItem(key));
-  }
-
   useEffect(() => {
     if (typeof window !== "undefined" && session?.user?.email) {
       const data = localStorage.getItem(
@@ -60,41 +36,99 @@ export default function Sidebar() {
     }
   }, [session?.user?.email]);
 
-  // Only show user info if authenticated
   const isAuthenticated = status === "authenticated" && session?.user;
 
   return (
     <aside
-      className={`bg-white shadow-md border-r border-gray-200 flex flex-col transition-all duration-300 hidden lg:flex ${
-        collapsed ? "w-20" : "w-64"
-      }`}
+      className={`
+        group/sidebar
+        fixed lg:static top-0 left-0 z-40 h-screen lg:h-auto
+        flex flex-col items-center bg-white/90 backdrop-blur-md shadow-xl border-r border-gray-100/50
+        transition-all duration-300
+        ${collapsed ? "w-16" : "w-56"}
+        overflow-hidden
+        select-none
+      `}
+      style={{ minWidth: collapsed ? 64 : 220, maxWidth: collapsed ? 64 : 220 }}
     >
-      <div className="flex items-center justify-between h-16 px-4 border-b border-gray-100">
-        {!collapsed && isAuthenticated && (
-          <div className="flex items-center gap-3">
+      {/* Profile section below app icon */}
+      <div
+        className={`flex items-center w-full px-2 py-4 ${
+          collapsed ? "justify-center" : "gap-3"
+        }`}
+      >
+        {isAuthenticated ? (
+          <>
             {session.user.image ? (
               <img
                 src={session.user.image}
                 alt={session.user.name || "User"}
-                className="w-10 h-10 rounded-full border-2 border-blue-600 object-cover"
+                className="w-9 h-9 rounded-full border-2 border-blue-400 object-cover shadow"
               />
             ) : (
-              <span className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xl">
+              <span className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 text-white flex items-center justify-center font-bold text-lg shadow">
                 {session.user.name ? session.user.name.charAt(0) : "V"}
               </span>
             )}
-            <span className="text-lg font-bold text-blue-600">
-              {session.user.name || "VidyaAI"}
-            </span>
-          </div>
+            {!collapsed && (
+              <span className="font-semibold text-gray-900 truncate max-w-[110px]">
+                {session.user.name || "VidyaAI"}
+              </span>
+            )}
+          </>
+        ) : (
+          <span className="w-9 h-9 rounded-full bg-gray-200" />
         )}
+      </div>
+
+      {/* Navigation */}
+      <nav className="flex-1 flex flex-col gap-1 w-full items-center overflow-hidden mt-2">
+        {navLinks.map((link) => {
+          const isActive = pathname?.startsWith(link.href) || false;
+          const showBadge = link.href === "/quiz" && quizCount > 0;
+          return (
+            <Link
+              key={link.href}
+              href={link.href}
+              className={`
+                group flex items-center w-[90%] mx-auto my-1 rounded-xl transition-all duration-200
+                ${collapsed ? "justify-center px-0" : "gap-3 px-3"}
+                ${
+                  isActive
+                    ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg"
+                    : "text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 hover:text-blue-600"
+                }
+                h-12 min-h-[48px] relative
+              `}
+              title={link.label}
+            >
+              <span className="text-xl flex-shrink-0">{link.icon}</span>
+              {!collapsed && (
+                <span className="truncate text-base font-medium">
+                  {link.label}
+                </span>
+              )}
+              {showBadge && !collapsed && (
+                <span className="ml-auto bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs rounded-full px-2 py-0.5 shadow-lg">
+                  {quizCount}
+                </span>
+              )}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Collapse/Expand and Sign Out at the bottom */}
+      <div className="w-full flex flex-col items-center gap-2 pb-4 mt-auto">
         <button
-          className="text-gray-500 hover:text-blue-500 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
-          onClick={() => setCollapsed(!collapsed)}
+          className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-blue-100 text-blue-600 transition-all duration-200 mb-2"
+          onClick={() => setCollapsed((c) => !c)}
           aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           <svg
-            className="w-6 h-6"
+            className={`w-6 h-6 transition-transform duration-300 ${
+              collapsed ? "rotate-180" : ""
+            }`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -107,46 +141,13 @@ export default function Sidebar() {
             />
           </svg>
         </button>
-      </div>
-
-      <nav className="flex-1 py-4 px-2 space-y-2">
-        {navLinks.map((link) => {
-          const isActive = pathname?.startsWith(link.href) || false;
-          const showBadge = link.href === "/quiz" && quizCount > 0;
-          return (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`flex items-center gap-3 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                isActive
-                  ? "bg-blue-500 text-white shadow-md"
-                  : "text-gray-700 hover:bg-blue-50 hover:text-blue-600"
-              } ${collapsed ? "justify-center" : ""}`}
-              title={collapsed ? link.label : undefined}
-            >
-              <span className="text-xl">{link.icon}</span>
-              {!collapsed && <span>{link.label}</span>}
-              {showBadge && !collapsed && (
-                <span className="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
-                  {quizCount}
-                </span>
-              )}
-            </Link>
-          );
-        })}
-      </nav>
-
-      <div className="mt-auto p-4 border-t border-gray-100">
-        {isAuthenticated ? (
+        {isAuthenticated && (
           <button
-            onClick={() => {
-              clearUserLocalStorage(session?.user?.email || undefined);
-              signOut();
-            }}
-            className={`w-full flex items-center gap-3 px-4 py-2 rounded-lg font-medium transition-colors text-gray-700 hover:bg-red-100 hover:text-red-700 ${
-              collapsed ? "justify-center" : ""
+            onClick={() => signOut()}
+            className={`w-10 h-10 flex items-center justify-center rounded-xl bg-gradient-to-r from-red-100 to-pink-100 text-red-600 hover:bg-red-200 transition-all duration-200 ${
+              collapsed ? "" : "w-[90%]"
             }`}
-            title={collapsed ? "Sign Out" : undefined}
+            title="Sign Out"
           >
             <svg
               className="w-6 h-6"
@@ -161,9 +162,9 @@ export default function Sidebar() {
                 d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
               />
             </svg>
-            {!collapsed && <span>Sign Out</span>}
+            {!collapsed && <span className="ml-2 font-medium">Sign Out</span>}
           </button>
-        ) : null}
+        )}
       </div>
     </aside>
   );
