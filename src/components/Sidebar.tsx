@@ -51,6 +51,24 @@ export default function Sidebar() {
       `}
       style={{ minWidth: collapsed ? 64 : 220, maxWidth: collapsed ? 64 : 220 }}
     >
+      {/* App Icon at the very top left */}
+      <Link
+        href="/"
+        className={`flex items-center justify-center mt-4 mb-2 ${
+          collapsed ? "mx-0" : "mx-2"
+        }`}
+        aria-label="Home"
+      >
+        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-2xl shadow">
+          V
+        </div>
+        {!collapsed && (
+          <span className="ml-3 text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent tracking-tight">
+            VidyaAI
+          </span>
+        )}
+      </Link>
+
       {/* Profile section below app icon */}
       <div
         className={`flex items-center w-full px-2 py-4 ${

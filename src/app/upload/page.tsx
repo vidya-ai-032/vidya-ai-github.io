@@ -1950,6 +1950,7 @@ export default function UploadPage() {
           </div>
         )}
       </div>
+    </div>
 
       {/* AI Tutor Modal */}
       <AITutorModal
