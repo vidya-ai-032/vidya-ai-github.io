@@ -11,6 +11,7 @@ module.exports = {
         fadeIn: "fadeIn 0.6s ease-out",
         slideIn: "slideIn 0.6s ease-out",
         scaleIn: "scaleIn 0.6s ease-out",
+        bounceIn: "bounceIn 0.6s ease-out",
         pulse: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
       },
       keyframes: {
@@ -24,6 +25,12 @@ module.exports = {
         },
         scaleIn: {
           "0%": { opacity: "0", transform: "scale(0.9)" },
+          "100%": { opacity: "1", transform: "scale(1)" },
+        },
+        bounceIn: {
+          "0%": { opacity: "0", transform: "scale(0.3)" },
+          "50%": { opacity: "1", transform: "scale(1.05)" },
+          "70%": { transform: "scale(0.9)" },
           "100%": { opacity: "1", transform: "scale(1)" },
         },
       },

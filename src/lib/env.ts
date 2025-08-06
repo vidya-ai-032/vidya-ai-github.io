@@ -1,3 +1,6 @@
+const isDevelopment = process.env.NODE_ENV === 'development';
+const isProduction = process.env.NODE_ENV === 'production';
+
 export function validateEnvironmentVariables() {
   const requiredVars = {
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
@@ -12,16 +15,27 @@ export function validateEnvironmentVariables() {
     .map(([key]) => key);
 
   if (missingVars.length > 0) {
-    console.error("Missing required environment variables:", missingVars);
-    console.error(
-      "Environment check failed. This will cause authentication and API issues."
-    );
-    throw new Error(
-      `Missing required environment variables: ${missingVars.join(", ")}`
-    );
+    // Only log detailed errors in development
+    if (isDevelopment) {
+      console.error("Missing required environment variables:", missingVars);
+      console.error(
+        "Environment check failed. This will cause authentication and API issues."
+      );
+    }
+    
+    // Create production-friendly error message
+    const errorMessage = isProduction 
+      ? "Application configuration error. Please check deployment settings."
+      : `Missing required environment variables: ${missingVars.join(", ")}`;
+    
+    throw new Error(errorMessage);
   }
 
-  console.log("✅ All required environment variables are set");
+  // Only log success in development
+  if (isDevelopment) {
+    console.log("✅ All required environment variables are set");
+  }
+  
   return true;
 }
 
@@ -33,17 +47,19 @@ export function getEnvironmentInfo() {
     hasGoogleClientSecret: !!process.env.GOOGLE_CLIENT_SECRET,
     hasNextAuthSecret: !!process.env.NEXTAUTH_SECRET,
     hasGeminiApiKey: !!process.env.GOOGLE_GEMINI_API_KEY,
-    // Add more detailed info for debugging
-    googleClientIdLength: process.env.GOOGLE_CLIENT_ID?.length || 0,
-    googleClientSecretLength: process.env.GOOGLE_CLIENT_SECRET?.length || 0,
-    nextAuthSecretLength: process.env.NEXTAUTH_SECRET?.length || 0,
-    geminiApiKeyLength: process.env.GOOGLE_GEMINI_API_KEY?.length || 0,
+    // Only include detailed info in development
+    ...(isDevelopment && {
+      googleClientIdLength: process.env.GOOGLE_CLIENT_ID?.length || 0,
+      googleClientSecretLength: process.env.GOOGLE_CLIENT_SECRET?.length || 0,
+      nextAuthSecretLength: process.env.NEXTAUTH_SECRET?.length || 0,
+      geminiApiKeyLength: process.env.GOOGLE_GEMINI_API_KEY?.length || 0,
+    }),
   };
 }
 
 // Function to check if we're in production and provide helpful error messages
 export function checkProductionEnvironment() {
-  if (process.env.NODE_ENV === "production") {
+  if (isProduction) {
     const envInfo = getEnvironmentInfo();
     const missingVars = [];
 
@@ -54,14 +70,25 @@ export function checkProductionEnvironment() {
     if (!envInfo.hasGeminiApiKey) missingVars.push("GOOGLE_GEMINI_API_KEY");
 
     if (missingVars.length > 0) {
+      // Use console.error since we want these critical errors even in production
       console.error("🚨 PRODUCTION ENVIRONMENT ISSUE:");
       console.error("Missing environment variables:", missingVars);
       console.error(
-        "Please configure these in your Google Cloud Run service environment variables."
+        "Please configure these in your deployment environment."
       );
-      console.error(
-        "Go to: Google Cloud Console > Cloud Run > Your Service > Edit > Variables & Secrets"
-      );
+      
+      // Return structured error info for programmatic handling
+      return {
+        hasErrors: true,
+        missingVars,
+        errorMessage: "Critical environment variables are missing"
+      };
     }
   }
+  
+  return {
+    hasErrors: false,
+    missingVars: [],
+    errorMessage: null
+  };
 }
