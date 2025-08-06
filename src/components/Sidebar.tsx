@@ -52,7 +52,7 @@ export default function Sidebar() {
       style={{ minWidth: collapsed ? 64 : 220, maxWidth: collapsed ? 64 : 220 }}
     >
       {/* App Icon at the very top left */}
-      <Link
+      {/* <Link
         href="/"
         className={`flex items-center justify-center mt-4 mb-2 ${
           collapsed ? "mx-0" : "mx-2"
@@ -67,7 +67,7 @@ export default function Sidebar() {
             VidyaAI
           </span>
         )}
-      </Link>
+      </Link> */}
 
       {/* Profile section below app icon */}
       <div
