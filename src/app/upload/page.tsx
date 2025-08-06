@@ -1673,284 +1673,289 @@ export default function UploadPage() {
             Supported formats: PDF, DOCX, TXT, JPG, PNG
           </p>
 
-        {/* Upload Form */}
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleUpload();
-          }}
-          className="space-y-4"
-        >
-          <div className="flex flex-col items-center justify-center w-full">
-            <label
-              htmlFor="file-upload"
-              className="w-full flex flex-col items-center justify-center px-3 sm:px-4 py-4 sm:py-6 bg-white border-2 border-blue-300 border-dashed rounded-lg cursor-pointer hover:bg-blue-50 transition-all duration-200"
-            >
-              <div className="flex flex-col items-center justify-center pt-3 sm:pt-5 pb-4 sm:pb-6">
-                <svg
-                  className="w-8 h-8 sm:w-10 sm:h-10 mb-2 sm:mb-3 text-blue-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                  />
-                </svg>
-                <p className="mb-2 text-xs sm:text-sm text-gray-500">
-                  <span className="font-semibold">Click to upload</span> or drag
-                  and drop
-                </p>
-                <p className="text-xs text-gray-500">
-                  PDF, DOCX, TXT, JPG, or PNG
-                </p>
-              </div>
-              <input
-                id="file-upload"
-                type="file"
-                className="hidden"
-                accept={ACCEPTED_TYPES.join(",")}
-                onChange={handleFileChange}
-                ref={inputRef}
-              />
-            </label>
-          </div>
-
-          {selectedFile && (
-            <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
-              <div className="flex items-center">
-                <svg
-                  className="w-8 h-8 text-blue-500 mr-3"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="2"
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">
-                    {selectedFile.name}
+          {/* Upload Form */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleUpload();
+            }}
+            className="space-y-4"
+          >
+            <div className="flex flex-col items-center justify-center w-full">
+              <label
+                htmlFor="file-upload"
+                className="w-full flex flex-col items-center justify-center px-3 sm:px-4 py-4 sm:py-6 bg-white border-2 border-blue-300 border-dashed rounded-lg cursor-pointer hover:bg-blue-50 transition-all duration-200"
+              >
+                <div className="flex flex-col items-center justify-center pt-3 sm:pt-5 pb-4 sm:pb-6">
+                  <svg
+                    className="w-8 h-8 sm:w-10 sm:h-10 mb-2 sm:mb-3 text-blue-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                    />
+                  </svg>
+                  <p className="mb-2 text-xs sm:text-sm text-gray-500">
+                    <span className="font-semibold">Click to upload</span> or
+                    drag and drop
                   </p>
                   <p className="text-xs text-gray-500">
-                    {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                    PDF, DOCX, TXT, JPG, or PNG
                   </p>
                 </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedFile(null);
-                  setPreviewUrl(null);
-                  if (inputRef.current) inputRef.current.value = "";
-                }}
-                className="text-sm font-medium text-red-600 hover:text-red-800"
-              >
-                Remove
-              </button>
+                <input
+                  id="file-upload"
+                  type="file"
+                  className="hidden"
+                  accept={ACCEPTED_TYPES.join(",")}
+                  onChange={handleFileChange}
+                  ref={inputRef}
+                />
+              </label>
             </div>
-          )}
 
-          {error && (
-            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-sm text-red-600">{error}</p>
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={!selectedFile || isUploading}
-            className="btn-modern w-full text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-          >
-            {isUploading ? (
-              <div className="flex items-center justify-center">
-                <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-3" />
-                Processing...
-              </div>
-            ) : (
-              "Upload & Process"
-            )}
-          </button>
-        </form>
-
-        {/* Extracted Topics */}
-        {extractedTopics.length > 0 && (
-          <div className="mt-8">
-            <div className="flex items-center justify-between mb-6 print-hide">
-              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
-                Extracted Topics
-              </h2>
-              <div className="flex gap-2 items-center">
-                <button
-                  className={`px-3 py-1 rounded font-semibold border text-sm transition-colors ${
-                    subtopicDisplayMode === "card"
-                      ? "bg-blue-600 text-white border-blue-600"
-                      : "bg-white text-blue-600 border-blue-600"
-                  }`}
-                  onClick={() => setSubtopicDisplayMode("card")}
-                  aria-label="Card View"
-                >
-                  Card View
-                </button>
-                <button
-                  className={`px-3 py-1 rounded font-semibold border text-sm transition-colors ${
-                    subtopicDisplayMode === "block"
-                      ? "bg-blue-600 text-white border-blue-600"
-                      : "bg-white text-blue-600 border-blue-600"
-                  }`}
-                  onClick={() => setSubtopicDisplayMode("block")}
-                  aria-label="Block View"
-                >
-                  Block View
-                </button>
-                <PrintButton contentId="subtopics-section" />
-              </div>
-            </div>
-            <div
-              id="subtopics-section"
-              className={
-                subtopicDisplayMode === "card"
-                  ? "grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 print-content"
-                  : "flex flex-col gap-4 sm:gap-6 print-content"
-              }
-            >
-              {extractedTopics.map((t, i) => (
-                <React.Fragment key={i}>
-                  <SubtopicCard
-                    topic={t}
-                    subject={t.subject}
-                    rawContent={t.rawContent}
-                    setTutorModal={setTutorModal}
-                    expandedCardId={null} // No expanded card for main topics
-                    setExpandedCardId={() => {}}
-                    quizAnswers={quizAnswers}
-                    quizSubmitted={quizSubmitted}
-                    quizScore={quizScore}
-                    handleQuizAnswer={handleQuizAnswer}
-                    handleQuizSubmit={handleQuizSubmit}
-                    qaContent={qaContent}
-                    qaExpanded={qaExpanded}
-                    setQaContent={setQaContent}
-                    setQaExpanded={setQaExpanded}
-                  />
-                  {Array.isArray(t.subtopics) &&
-                    t.subtopics.length > 0 &&
-                    t.subtopics.map((sub, j) => (
-                      <SubtopicCard
-                        key={j}
-                        topic={sub}
-                        subject={t.subject}
-                        rawContent={t.rawContent}
-                        setTutorModal={setTutorModal}
-                        expandedCardId={null} // No expanded card for subtopics
-                        setExpandedCardId={() => {}}
-                        quizAnswers={quizAnswers}
-                        quizSubmitted={quizSubmitted}
-                        quizScore={quizScore}
-                        handleQuizAnswer={handleQuizAnswer}
-                        handleQuizSubmit={handleQuizSubmit}
-                        qaContent={qaContent}
-                        qaExpanded={qaExpanded}
-                        setQaContent={setQaContent}
-                        setQaExpanded={setQaExpanded}
-                      />
-                    ))}
-                </React.Fragment>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Recent Uploads */}
-        {libraryDocs.slice(0, 5).length > 0 && (
-          <div className="mt-8">
-            <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">
-              Recent Uploads
-            </h2>
-            <ul className="space-y-4">
-              {libraryDocs.slice(0, 5).map((doc, i) => (
-                <li
-                  key={doc.name + "-" + doc.date}
-                  className="card-modern p-6 flex flex-col gap-4"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium text-gray-900">{doc.name}</h3>
-                      <p className="text-sm text-gray-500">
-                        Subject: {doc.subject}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => {
-                          // Toggle expanded state
-                          setExpanded((prev) => ({
-                            ...prev,
-                            [doc.name]: !prev[doc.name],
-                          }));
-                          // If expanding, regenerate subtopics
-                          if (!expanded[doc.name]) handleGenerateSubtopics(doc);
-                        }}
-                        className={`btn-modern text-sm px-4 py-2 ${
-                          expanded[doc.name] ? "bg-gradient-to-r from-blue-700 to-purple-700" : ""
-                        }`}
-                      >
-                        {expanded[doc.name]
-                          ? "Hide Subtopics"
-                          : "Generate Subtopics"}
-                      </button>
-                      <button
-                        onClick={() => handleDeleteDoc(doc)}
-                        className="bg-red-100 text-red-600 p-2 rounded-full hover:bg-red-200 transition-colors"
-                        title="Delete document"
-                      >
-                        <FaTrash />
-                      </button>
-                    </div>
+            {selectedFile && (
+              <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg">
+                <div className="flex items-center">
+                  <svg
+                    className="w-8 h-8 text-blue-500 mr-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {selectedFile.name}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                    </p>
                   </div>
-                  {/* Show subtopics if present and expanded */}
-                  {expanded[doc.name] &&
-                    docSubtopics[doc.name] &&
-                    docSubtopics[doc.name].length > 0 && (
-                      <div className="mt-2">
-                        {docSubtopics[doc.name].map((t, idx) => (
-                          <SubtopicCard
-                            key={idx}
-                            topic={t}
-                            subject={t.subject}
-                            rawContent={t.rawContent}
-                            setTutorModal={setTutorModal}
-                            expandedCardId={null}
-                            setExpandedCardId={() => {}}
-                            quizAnswers={quizAnswers}
-                            quizSubmitted={quizSubmitted}
-                            quizScore={quizScore}
-                            handleQuizAnswer={handleQuizAnswer}
-                            handleQuizSubmit={handleQuizSubmit}
-                            qaContent={qaContent}
-                            qaExpanded={qaExpanded}
-                            setQaContent={setQaContent}
-                            setQaExpanded={setQaExpanded}
-                          />
-                        ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedFile(null);
+                    setPreviewUrl(null);
+                    if (inputRef.current) inputRef.current.value = "";
+                  }}
+                  className="text-sm font-medium text-red-600 hover:text-red-800"
+                >
+                  Remove
+                </button>
+              </div>
+            )}
+
+            {error && (
+              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+                <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={!selectedFile || isUploading}
+              className="btn-modern w-full text-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            >
+              {isUploading ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-3" />
+                  Processing...
+                </div>
+              ) : (
+                "Upload & Process"
+              )}
+            </button>
+          </form>
+
+          {/* Extracted Topics */}
+          {extractedTopics.length > 0 && (
+            <div className="mt-8">
+              <div className="flex items-center justify-between mb-6 print-hide">
+                <h2 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                  Extracted Topics
+                </h2>
+                <div className="flex gap-2 items-center">
+                  <button
+                    className={`px-3 py-1 rounded font-semibold border text-sm transition-colors ${
+                      subtopicDisplayMode === "card"
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "bg-white text-blue-600 border-blue-600"
+                    }`}
+                    onClick={() => setSubtopicDisplayMode("card")}
+                    aria-label="Card View"
+                  >
+                    Card View
+                  </button>
+                  <button
+                    className={`px-3 py-1 rounded font-semibold border text-sm transition-colors ${
+                      subtopicDisplayMode === "block"
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "bg-white text-blue-600 border-blue-600"
+                    }`}
+                    onClick={() => setSubtopicDisplayMode("block")}
+                    aria-label="Block View"
+                  >
+                    Block View
+                  </button>
+                  <PrintButton contentId="subtopics-section" />
+                </div>
+              </div>
+              <div
+                id="subtopics-section"
+                className={
+                  subtopicDisplayMode === "card"
+                    ? "grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 print-content"
+                    : "flex flex-col gap-4 sm:gap-6 print-content"
+                }
+              >
+                {extractedTopics.map((t, i) => (
+                  <React.Fragment key={i}>
+                    <SubtopicCard
+                      topic={t}
+                      subject={t.subject}
+                      rawContent={t.rawContent}
+                      setTutorModal={setTutorModal}
+                      expandedCardId={null} // No expanded card for main topics
+                      setExpandedCardId={() => {}}
+                      quizAnswers={quizAnswers}
+                      quizSubmitted={quizSubmitted}
+                      quizScore={quizScore}
+                      handleQuizAnswer={handleQuizAnswer}
+                      handleQuizSubmit={handleQuizSubmit}
+                      qaContent={qaContent}
+                      qaExpanded={qaExpanded}
+                      setQaContent={setQaContent}
+                      setQaExpanded={setQaExpanded}
+                    />
+                    {Array.isArray(t.subtopics) &&
+                      t.subtopics.length > 0 &&
+                      t.subtopics.map((sub, j) => (
+                        <SubtopicCard
+                          key={j}
+                          topic={sub}
+                          subject={t.subject}
+                          rawContent={t.rawContent}
+                          setTutorModal={setTutorModal}
+                          expandedCardId={null} // No expanded card for subtopics
+                          setExpandedCardId={() => {}}
+                          quizAnswers={quizAnswers}
+                          quizSubmitted={quizSubmitted}
+                          quizScore={quizScore}
+                          handleQuizAnswer={handleQuizAnswer}
+                          handleQuizSubmit={handleQuizSubmit}
+                          qaContent={qaContent}
+                          qaExpanded={qaExpanded}
+                          setQaContent={setQaContent}
+                          setQaExpanded={setQaExpanded}
+                        />
+                      ))}
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Recent Uploads */}
+          {libraryDocs.slice(0, 5).length > 0 && (
+            <div className="mt-8">
+              <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">
+                Recent Uploads
+              </h2>
+              <ul className="space-y-4">
+                {libraryDocs.slice(0, 5).map((doc, i) => (
+                  <li
+                    key={doc.name + "-" + doc.date}
+                    className="card-modern p-6 flex flex-col gap-4"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-medium text-gray-900">
+                          {doc.name}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          Subject: {doc.subject}
+                        </p>
                       </div>
-                    )}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            // Toggle expanded state
+                            setExpanded((prev) => ({
+                              ...prev,
+                              [doc.name]: !prev[doc.name],
+                            }));
+                            // If expanding, regenerate subtopics
+                            if (!expanded[doc.name])
+                              handleGenerateSubtopics(doc);
+                          }}
+                          className={`btn-modern text-sm px-4 py-2 ${
+                            expanded[doc.name]
+                              ? "bg-gradient-to-r from-blue-700 to-purple-700"
+                              : ""
+                          }`}
+                        >
+                          {expanded[doc.name]
+                            ? "Hide Subtopics"
+                            : "Generate Subtopics"}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteDoc(doc)}
+                          className="bg-red-100 text-red-600 p-2 rounded-full hover:bg-red-200 transition-colors"
+                          title="Delete document"
+                        >
+                          <FaTrash />
+                        </button>
+                      </div>
+                    </div>
+                    {/* Show subtopics if present and expanded */}
+                    {expanded[doc.name] &&
+                      docSubtopics[doc.name] &&
+                      docSubtopics[doc.name].length > 0 && (
+                        <div className="mt-2">
+                          {docSubtopics[doc.name].map((t, idx) => (
+                            <SubtopicCard
+                              key={idx}
+                              topic={t}
+                              subject={t.subject}
+                              rawContent={t.rawContent}
+                              setTutorModal={setTutorModal}
+                              expandedCardId={null}
+                              setExpandedCardId={() => {}}
+                              quizAnswers={quizAnswers}
+                              quizSubmitted={quizSubmitted}
+                              quizScore={quizScore}
+                              handleQuizAnswer={handleQuizAnswer}
+                              handleQuizSubmit={handleQuizSubmit}
+                              qaContent={qaContent}
+                              qaExpanded={qaExpanded}
+                              setQaContent={setQaContent}
+                              setQaExpanded={setQaExpanded}
+                            />
+                          ))}
+                        </div>
+                      )}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
 
       {/* AI Tutor Modal */}
       <AITutorModal
