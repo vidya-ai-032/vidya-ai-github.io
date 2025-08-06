@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { signOut, useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 
 const navLinks = [
   { href: "/dashboard", label: "Dashboard", icon: "🏠" },
@@ -43,7 +43,7 @@ export default function Sidebar() {
       className={`
         group/sidebar
         fixed lg:static top-0 left-0 z-40 h-screen lg:h-auto
-        flex flex-col items-center bg-white/90 backdrop-blur-md shadow-xl border-r border-gray-100/50
+        flex flex-col bg-white/90 backdrop-blur-md shadow-xl border-r border-gray-100/50
         transition-all duration-300
         ${collapsed ? "w-16" : "w-56"}
         overflow-hidden
@@ -51,25 +51,36 @@ export default function Sidebar() {
       `}
       style={{ minWidth: collapsed ? 64 : 220, maxWidth: collapsed ? 64 : 220 }}
     >
-      {/* App Icon at the very top left */}
-      {/* <Link
-        href="/"
-        className={`flex items-center justify-center mt-4 mb-2 ${
-          collapsed ? "mx-0" : "mx-2"
-        }`}
-        aria-label="Home"
-      >
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-2xl shadow">
-          V
-        </div>
-        {!collapsed && (
-          <span className="ml-3 text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent tracking-tight">
-            VidyaAI
-          </span>
-        )}
-      </Link> */}
+      {/* Header with collapse toggle in top-right corner */}
+      <div className="flex items-center justify-between w-full px-2 py-2 relative">
+        {/* Empty space for alignment */}
+        <div className="flex-1"></div>
+        
+        {/* Collapse/Expand toggle button in top-right corner */}
+        <button
+          className="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-100 hover:bg-blue-100 text-blue-600 transition-all duration-200 flex-shrink-0"
+          onClick={() => setCollapsed((c) => !c)}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          <svg
+            className={`w-4 h-4 transition-transform duration-300 ${
+              collapsed ? "rotate-180" : ""
+            }`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d={collapsed ? "M9 5l7 7-7 7" : "M15 19l-7-7 7-7"}
+            />
+          </svg>
+        </button>
+      </div>
 
-      {/* Profile section below app icon */}
+      {/* Profile section */}
       <div
         className={`flex items-center w-full px-2 py-4 ${
           collapsed ? "justify-center" : "gap-3"
@@ -135,55 +146,6 @@ export default function Sidebar() {
           );
         })}
       </nav>
-
-      {/* Collapse/Expand and Sign Out at the bottom */}
-      <div className="w-full flex flex-col items-center gap-2 pb-4 mt-auto">
-        <button
-          className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 hover:bg-blue-100 text-blue-600 transition-all duration-200 mb-2"
-          onClick={() => setCollapsed((c) => !c)}
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          <svg
-            className={`w-6 h-6 transition-transform duration-300 ${
-              collapsed ? "rotate-180" : ""
-            }`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d={collapsed ? "M9 5l7 7-7 7" : "M15 19l-7-7 7-7"}
-            />
-          </svg>
-        </button>
-        {isAuthenticated && (
-          <button
-            onClick={() => signOut()}
-            className={`w-10 h-10 flex items-center justify-center rounded-xl bg-gradient-to-r from-red-100 to-pink-100 text-red-600 hover:bg-red-200 transition-all duration-200 ${
-              collapsed ? "" : "w-[90%]"
-            }`}
-            title="Sign Out"
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-              />
-            </svg>
-            {!collapsed && <span className="ml-2 font-medium">Sign Out</span>}
-          </button>
-        )}
-      </div>
     </aside>
   );
 }
