@@ -24,28 +24,28 @@ const quickActions = [
     description: "Continue with your AI tutor",
     icon: "🎓",
     href: "/tutor",
-    color: "bg-blue-100 text-blue-700",
+    color: "bg-gradient-to-br from-blue-500 to-blue-600",
   },
   {
     title: "Upload Materials",
     description: "Add new study content",
     icon: "📁",
     href: "/upload",
-    color: "bg-green-100 text-green-700",
+    color: "bg-gradient-to-br from-green-500 to-green-600",
   },
   {
     title: "Take a Quiz",
     description: "Test your knowledge",
     icon: "📝",
     href: "/quiz",
-    color: "bg-yellow-100 text-yellow-700",
+    color: "bg-gradient-to-br from-yellow-500 to-yellow-600",
   },
   {
     title: "Subjective QA",
     description: "Get answers from the AI",
     icon: "❓",
     href: "/subjective-qa",
-    color: "bg-purple-100 text-purple-700",
+    color: "bg-gradient-to-br from-purple-500 to-purple-600",
   },
 ];
 
@@ -264,14 +264,16 @@ export default function DashboardPage() {
 
   if (status !== "authenticated") {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="bg-white p-8 rounded shadow text-center">
-          <h2 className="text-xl font-bold mb-4">Sign in required</h2>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+        <div className="card-modern p-8 text-center max-w-md mx-auto">
+          <h2 className="text-2xl font-bold mb-6 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            Sign in required
+          </h2>
           <button
-            className="bg-white border border-gray-300 rounded-lg shadow-sm flex items-center gap-2 px-6 py-2 text-gray-700 hover:bg-gray-50 transition-colors mx-auto"
+            className="btn-modern w-full"
             onClick={() => signIn("google", { prompt: "select_account" })}
           >
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
               <path
                 fill="#4285F4"
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -297,12 +299,14 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-3 sm:p-4 lg:p-6 xl:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-3 sm:p-4 lg:p-6 xl:p-8">
       {showApiBanner && (
-        <div className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6 rounded-md flex items-center justify-between shadow-sm">
+        <div className="card-modern p-6 mb-8 border-l-4 border-yellow-500 bg-gradient-to-r from-yellow-50 to-orange-50 flex items-center justify-between animate-fadeIn">
           <div>
-            <span className="font-bold">⚡️ Set your Gemini API key!</span>
-            <p className="text-sm">
+            <span className="font-bold text-yellow-800">
+              ⚡️ Set your Gemini API key!
+            </span>
+            <p className="text-sm text-yellow-700 mt-1">
               Unlock all AI features by adding your API key in the settings.
             </p>
           </div>
@@ -324,47 +328,63 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">
-          Welcome back, {session?.user?.name?.split(" ")[0] || "User"}! 👋
+      <div className="mb-8 animate-fadeIn">
+        <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
+          Welcome back,{" "}
+          <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            {session?.user?.name?.split(" ")[0] || "User"}
+          </span>
+          ! 👋
         </h1>
-        <p className="text-gray-600 text-sm sm:text-base">
+        <p className="text-gray-600 text-lg">
           Here&apos;s your learning dashboard for today.
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 animate-slideIn">
         <StatCard
           title="Topics Completed"
           value={stats.topicsCompleted}
           icon="📚"
+          gradient="from-blue-500 to-blue-600"
         />
-        <StatCard title="Quizzes Taken" value={stats.quizzesTaken} icon="📝" />
+        <StatCard
+          title="Quizzes Taken"
+          value={stats.quizzesTaken}
+          icon="📝"
+          gradient="from-purple-500 to-purple-600"
+        />
         <StatCard
           title="Average Score"
           value={`${stats.averageScore}%`}
           icon="🎯"
+          gradient="from-green-500 to-green-600"
         />
-        <StatCard title="Study Time" value={stats.studyTime} icon="⏱️" />
+        <StatCard
+          title="Study Time"
+          value={stats.studyTime}
+          icon="⏱️"
+          gradient="from-pink-500 to-pink-600"
+        />
       </div>
 
-      <div className="mb-6 sm:mb-8">
-        <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">
+      <div className="mb-8 animate-scaleIn">
+        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">
           Quick Actions
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {quickActions.map((action) => (
             <ActionCard key={action.title} {...action} />
           ))}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fadeIn">
         <div className="lg:col-span-2">
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">
             Recent Topics
           </h2>
-          <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm space-y-3 sm:space-y-4">
+          <div className="card-modern p-6 space-y-4">
             {recentTopics.length > 0 ? (
               recentTopics.map((topic) => (
                 <TopicItem
@@ -378,17 +398,17 @@ export default function DashboardPage() {
                 />
               ))
             ) : (
-              <p className="text-gray-500">
+              <p className="text-gray-500 text-center py-8">
                 No recent topics to show. Start by uploading some material!
               </p>
             )}
           </div>
         </div>
         <div>
-          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3 sm:mb-4">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">
             AI Recommendations
           </h2>
-          <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm space-y-3 sm:space-y-4">
+          <div className="card-modern p-6 space-y-4">
             <RecommendationItem
               title="Review Photosynthesis"
               description="Your last quiz score was a bit low. A quick review could help."
@@ -404,50 +424,52 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
       {/* Modal for viewing topic details */}
       {showModal && viewedTopic && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 p-4">
-          <div className="bg-white rounded-xl shadow-2xl p-4 sm:p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto relative animate-fadeIn">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="card-modern p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto relative animate-scaleIn">
             <button
-              className="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-xl font-bold"
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-700 text-2xl font-bold w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition-colors"
               onClick={() => setShowModal(false)}
               aria-label="Close topic modal"
             >
               ×
             </button>
-            <h2 className="text-2xl font-bold mb-4 text-blue-700">
+            <h2 className="text-2xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               {viewedTopic.label}
             </h2>
             <p className="text-gray-600 mb-2">
               Last studied: {viewedTopic.lastStudied}
             </p>
-            <p className="text-gray-600 mb-4">
+            <p className="text-gray-600 mb-6">
               Progress: {viewedTopic.progress}%
             </p>
+
             {/* Subtopics section */}
             {modalSubtopics.length > 0 ? (
-              <div className="mb-4">
-                <h3 className="text-lg font-semibold text-blue-800 mb-2">
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">
                   Subtopics
                 </h3>
                 {modalSubtopics.map((sub, idx) => (
                   <div
                     key={idx}
-                    className="mb-4 p-3 border border-blue-100 rounded-lg bg-blue-50"
+                    className="mb-4 p-4 border border-blue-100 rounded-xl bg-gradient-to-r from-blue-50 to-purple-50"
                   >
-                    <div className="font-bold text-blue-700 mb-1">
+                    <div className="font-bold text-blue-700 mb-2">
                       {sub.title}
                     </div>
-                    <div className="text-gray-700 mb-2">{sub.summary}</div>
+                    <div className="text-gray-700 mb-3">{sub.summary}</div>
                     {sub.keyPoints && sub.keyPoints.length > 0 && (
-                      <ul className="list-disc pl-5 text-gray-600 text-sm mb-2">
+                      <ul className="list-disc pl-5 text-gray-600 text-sm mb-3">
                         {sub.keyPoints.map((kp: string, i: number) => (
                           <li key={i}>{kp}</li>
                         ))}
                       </ul>
                     )}
                     <button
-                      className="bg-yellow-500 text-white px-3 py-1 rounded font-semibold hover:bg-yellow-600 transition-colors text-sm"
+                      className="btn-modern-secondary text-sm px-4 py-2"
                       onClick={() => handleTeachMeThis(sub)}
                       disabled={tutorLoading === sub.title}
                     >
@@ -455,36 +477,39 @@ export default function DashboardPage() {
                         ? "Loading..."
                         : "Teach Me This"}
                     </button>
+
                     {/* AI Tutor/Teach Me This output */}
                     {tutorState[sub.title] &&
                       !tutorState[sub.title].loading && (
-                        <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                        <div className="mt-4 p-4 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl">
                           {tutorState[sub.title].error && (
-                            <div className="text-red-600 mb-2">
+                            <div className="text-red-600 mb-3 font-medium">
                               {tutorState[sub.title].error}
                             </div>
                           )}
                           {tutorState[sub.title].response && (
                             <>
-                              <div className="mb-2">
-                                <h4 className="font-semibold mb-1">
+                              <div className="mb-3">
+                                <h4 className="font-semibold mb-2 text-gray-800">
                                   AI Tutor Explanation:
                                 </h4>
-                                <div className="mb-2 whitespace-pre-line">
+                                <div className="mb-3 whitespace-pre-line text-gray-700">
                                   {tutorState[sub.title].response}
                                 </div>
                               </div>
                               {tutorState[sub.title].suggestions &&
                                 tutorState[sub.title].suggestions.length >
                                   0 && (
-                                  <div className="mb-2">
-                                    <span className="font-medium">
+                                  <div className="mb-3">
+                                    <span className="font-medium text-gray-800">
                                       Related Topics:
                                     </span>
-                                    <ul className="list-disc ml-6">
+                                    <ul className="list-disc ml-6 mt-1">
                                       {tutorState[sub.title].suggestions.map(
                                         (s: string, i: number) => (
-                                          <li key={i}>{s}</li>
+                                          <li key={i} className="text-gray-700">
+                                            {s}
+                                          </li>
                                         )
                                       )}
                                     </ul>
@@ -494,15 +519,17 @@ export default function DashboardPage() {
                                 tutorState[sub.title].followUpQuestions.length >
                                   0 && (
                                   <div>
-                                    <span className="font-medium">
+                                    <span className="font-medium text-gray-800">
                                       Model Questions:
                                     </span>
-                                    <ul className="list-disc ml-6">
+                                    <ul className="list-disc ml-6 mt-1">
                                       {tutorState[
                                         sub.title
                                       ].followUpQuestions.map(
                                         (fq: string, i: number) => (
-                                          <li key={i}>{fq}</li>
+                                          <li key={i} className="text-gray-700">
+                                            {fq}
+                                          </li>
                                         )
                                       )}
                                     </ul>
@@ -516,13 +543,13 @@ export default function DashboardPage() {
                 ))}
               </div>
             ) : (
-              <div className="text-gray-500">
+              <div className="text-gray-500 text-center py-8">
                 No subtopics found for this topic.
               </div>
             )}
             <div className="text-center">
               <button
-                className="bg-blue-600 text-white px-4 py-2 rounded font-semibold hover:bg-blue-700 transition-colors"
+                className="btn-modern"
                 onClick={() => setShowModal(false)}
               >
                 Close
@@ -539,18 +566,22 @@ const StatCard = ({
   title,
   value,
   icon,
+  gradient,
 }: {
   title: string;
   value: string | number;
   icon: React.ReactNode;
+  gradient: string;
 }) => (
-  <div className="bg-white p-4 sm:p-6 rounded-lg shadow-sm flex items-center">
-    <div className="text-2xl sm:text-3xl mr-3 sm:mr-4">{icon}</div>
+  <div className="card-modern p-6 flex items-center group">
+    <div
+      className={`w-16 h-16 bg-gradient-to-br ${gradient} rounded-2xl flex items-center justify-center mr-4 group-hover:scale-110 transition-transform duration-300 shadow-lg`}
+    >
+      <span className="text-2xl">{icon}</span>
+    </div>
     <div>
-      <p className="text-gray-600 text-xs sm:text-sm">{title}</p>
-      <p className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">
-        {value}
-      </p>
+      <p className="text-gray-600 text-sm font-medium">{title}</p>
+      <p className="text-2xl lg:text-3xl font-bold text-gray-900">{value}</p>
     </div>
   </div>
 );
@@ -570,14 +601,16 @@ const ActionCard = ({
 }) => (
   <Link
     href={href}
-    className="bg-white p-4 sm:p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow flex items-start"
+    className="card-modern p-6 hover:shadow-xl transition-all duration-300 group"
   >
-    <div className={`text-xl sm:text-2xl mr-3 sm:mr-4 p-2 rounded-lg ${color}`}>
-      {icon}
+    <div
+      className={`w-16 h-16 ${color} rounded-2xl flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300 shadow-lg`}
+    >
+      <span className="text-2xl">{icon}</span>
     </div>
-    <div>
-      <h3 className="font-bold text-gray-900 text-sm sm:text-base">{title}</h3>
-      <p className="text-gray-600 text-xs sm:text-sm">{description}</p>
+    <div className="text-center">
+      <h3 className="font-bold text-gray-900 text-lg mb-2">{title}</h3>
+      <p className="text-gray-600 text-sm">{description}</p>
     </div>
   </Link>
 );
@@ -595,37 +628,30 @@ const TopicItem = ({
   onView: () => void;
   onDelete: () => void;
 }) => (
-  <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 bg-gray-50 rounded-lg gap-3 sm:gap-0">
+  <div className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-blue-50 rounded-xl gap-4 sm:gap-0">
     <div className="flex-1 min-w-0">
-      <h4 className="font-bold text-gray-800 text-sm sm:text-base truncate">
-        {label}
-      </h4>
-      <p className="text-xs sm:text-sm text-gray-500">
-        Last studied: {lastStudied}
-      </p>
+      <h4 className="font-bold text-gray-800 text-lg truncate">{label}</h4>
+      <p className="text-sm text-gray-500">Last studied: {lastStudied}</p>
     </div>
-    <div className="flex items-center gap-2 sm:gap-3">
-      <div className="w-16 sm:w-24 bg-gray-200 rounded-full h-2">
+    <div className="flex items-center gap-3">
+      <div className="w-24 bg-gray-200 rounded-full h-3">
         <div
-          className="bg-blue-600 h-2 rounded-full"
+          className="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full transition-all duration-300"
           style={{ width: `${progress}%` }}
         ></div>
       </div>
-      <span className="font-semibold text-gray-700 text-xs sm:text-sm">
+      <span className="font-semibold text-gray-700 text-sm min-w-[3rem]">
         {progress}%
       </span>
-      <button
-        className="bg-blue-400 text-white px-2 sm:px-3 py-1 rounded hover:bg-blue-500 font-semibold text-xs sm:text-sm"
-        onClick={onView}
-      >
+      <button className="btn-modern text-sm px-3 py-2" onClick={onView}>
         View
       </button>
       <button
-        className="text-red-600 hover:text-red-800 p-1"
+        className="text-red-600 hover:text-red-800 p-2 hover:bg-red-50 rounded-lg transition-colors"
         onClick={onDelete}
         title="Delete topic"
       >
-        <FaTrash className="w-3 h-3 sm:w-4 sm:h-4" />
+        <FaTrash className="w-4 h-4" />
       </button>
     </div>
   </div>
@@ -642,14 +668,16 @@ const RecommendationItem = ({
   href: string;
   icon: React.ReactNode;
 }) => (
-  <div className="flex items-start">
-    <div className="text-xl mr-4">{icon}</div>
+  <div className="flex items-start group">
+    <div className="text-2xl mr-4 group-hover:scale-110 transition-transform duration-300">
+      {icon}
+    </div>
     <div>
-      <h4 className="font-bold text-gray-800">{title}</h4>
-      <p className="text-sm text-gray-500 mb-2">{description}</p>
+      <h4 className="font-bold text-gray-800 text-lg">{title}</h4>
+      <p className="text-sm text-gray-600 mb-3">{description}</p>
       <Link
         href={href}
-        className="text-sm font-semibold text-blue-600 hover:underline"
+        className="text-sm font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent hover:underline"
       >
         Start Now &rarr;
       </Link>

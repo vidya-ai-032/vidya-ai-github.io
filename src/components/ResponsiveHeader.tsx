@@ -50,23 +50,14 @@ export default function ResponsiveHeader() {
 
   return (
     <header
-      className="bg-white sticky top-0 z-50 shadow-sm"
+      className="bg-white/80 backdrop-blur-md sticky top-0 z-50 shadow-lg border-b border-gray-100/50"
       role="banner"
       aria-label="Site header"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-3">
-            <Link
-              href="/"
-              className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center text-white font-bold text-xl hover:bg-blue-600 transition-colors shadow-sm logo"
-              aria-label="Home"
-            >
-              V
-            </Link>
-            <span className="text-2xl font-bold text-blue-600 tracking-tight">
-              VidyaAI
-            </span>
+            {/* Logo removed from here */}
           </div>
 
           <nav
@@ -79,10 +70,10 @@ export default function ResponsiveHeader() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap nav-link mr-3 ${
+                  className={`px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 whitespace-nowrap nav-link mr-2 ${
                     isActive
-                      ? "bg-blue-500 text-white"
-                      : "text-gray-700 hover:bg-blue-100 hover:text-blue-500"
+                      ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg"
+                      : "text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 hover:text-blue-600"
                   }`}
                 >
                   {link.label}
@@ -92,14 +83,14 @@ export default function ResponsiveHeader() {
             {isAuthenticated ? (
               <button
                 onClick={() => signOut()}
-                className="px-3 py-2 rounded-lg text-sm font-medium text-gray-700 hover:bg-red-100 hover:text-red-700 transition-colors"
+                className="px-4 py-2 rounded-xl text-sm font-medium text-gray-700 hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 hover:text-red-600 transition-all duration-300"
               >
                 Sign Out
               </button>
             ) : (
               <button
                 onClick={() => signIn("google", { prompt: "select_account" })}
-                className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-500 text-white hover:bg-blue-600 transition-all duration-200 shadow-sm hover:shadow-md btn-primary"
+                className="btn-modern text-sm px-4 py-2"
               >
                 Sign In
               </button>
@@ -109,7 +100,7 @@ export default function ResponsiveHeader() {
           <div className="md:hidden flex items-center">
             <button
               onClick={() => setOpen(!open)}
-              className="p-2 rounded-lg text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 hover:bg-blue-50 transition-colors"
+              className="p-2 rounded-xl text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 transition-all duration-300"
               aria-label={open ? "Close menu" : "Open menu"}
               aria-expanded={open}
             >
@@ -143,13 +134,13 @@ export default function ResponsiveHeader() {
       {open && (
         <>
           <div
-            className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+            className="md:hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
             onClick={() => setOpen(false)}
             aria-hidden="true"
           />
           <nav
             ref={mobileMenuRef}
-            className="md:hidden bg-white px-4 pb-4 pt-2 space-y-1 border-t border-gray-200 shadow-lg relative z-50"
+            className="md:hidden bg-white/95 backdrop-blur-md px-4 pb-4 pt-2 space-y-1 border-t border-gray-100/50 shadow-xl relative z-50"
             aria-label="Mobile navigation"
           >
             {navLinks.map((link) => {
@@ -159,10 +150,10 @@ export default function ResponsiveHeader() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setOpen(false)}
-                  className={`block px-3 py-2 rounded-lg text-base font-medium transition-colors ${
+                  className={`block px-4 py-3 rounded-xl text-base font-medium transition-all duration-300 ${
                     isActive
-                      ? "bg-blue-600 text-white"
-                      : "text-gray-700 hover:bg-blue-100 hover:text-blue-700"
+                      ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg"
+                      : "text-gray-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-purple-50 hover:text-blue-600"
                   }`}
                 >
                   {link.label}
@@ -175,7 +166,7 @@ export default function ResponsiveHeader() {
                   signOut();
                   setOpen(false);
                 }}
-                className="w-full text-left block px-3 py-2 rounded-lg text-base font-medium text-gray-700 hover:bg-red-100 hover:text-red-700 transition-colors"
+                className="w-full text-left block px-4 py-3 rounded-xl text-base font-medium text-gray-700 hover:bg-gradient-to-r hover:from-red-50 hover:to-pink-50 hover:text-red-600 transition-all duration-300"
               >
                 Sign Out
               </button>
@@ -185,7 +176,7 @@ export default function ResponsiveHeader() {
                   signIn("google", { prompt: "select_account" });
                   setOpen(false);
                 }}
-                className="w-full text-left block px-3 py-2 rounded-lg text-base font-medium bg-blue-400 text-white hover:bg-blue-500 transition-colors"
+                className="w-full text-left block px-4 py-3 rounded-xl text-base font-medium bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 transition-all duration-300 shadow-lg"
               >
                 Sign In
               </button>
