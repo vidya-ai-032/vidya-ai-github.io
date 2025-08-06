@@ -1,10 +1,11 @@
 "use client";
 
 import { useSession, signIn, signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 export function useAuth() {
   const { data: session, status } = useSession();
-  // Remove: const router = useRouter();
+  const router = useRouter();
 
   const login = async (provider?: string) => {
     try {
@@ -19,9 +20,25 @@ export function useAuth() {
 
   const logout = async () => {
     try {
-      await signOut({ callbackUrl: "/" });
+      // First attempt: Use NextAuth signOut with callback
+      await signOut({ 
+        callbackUrl: "/",
+        redirect: true
+      });
+      
+      // Fallback: If the above doesn't work, use router navigation
+      // This ensures redirect works even if NextAuth redirect fails
+      setTimeout(() => {
+        if (typeof window !== "undefined") {
+          window.location.href = "/";
+        }
+      }, 100);
     } catch (error) {
       console.error("Logout error:", error);
+      // Emergency fallback: Direct navigation
+      if (typeof window !== "undefined") {
+        window.location.href = "/";
+      }
     }
   };
 
