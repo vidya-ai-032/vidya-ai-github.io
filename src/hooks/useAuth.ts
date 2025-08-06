@@ -21,23 +21,25 @@ export function useAuth() {
   const logout = async () => {
     try {
       // First attempt: Use NextAuth signOut with callback
-      await signOut({ 
-        callbackUrl: "/",
-        redirect: true
+      await signOut({
+        callbackUrl: "https://vidya-ai-640566924297.us-central1.run.app",
+        redirect: true,
       });
       
       // Fallback: If the above doesn't work, use router navigation
       // This ensures redirect works even if NextAuth redirect fails
       setTimeout(() => {
         if (typeof window !== "undefined") {
-          window.location.href = "/";
+          window.location.href =
+            "https://vidya-ai-640566924297.us-central1.run.app";
         }
       }, 100);
     } catch (error) {
       console.error("Logout error:", error);
       // Emergency fallback: Direct navigation
       if (typeof window !== "undefined") {
-        window.location.href = "/";
+          window.location.href =
+          "https://vidya-ai-640566924297.us-central1.run.app";
       }
     }
   };
