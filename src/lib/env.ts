@@ -1,5 +1,5 @@
-const isDevelopment = process.env.NODE_ENV === 'development';
-const isProduction = process.env.NODE_ENV === 'production';
+const isDevelopment = process.env.NODE_ENV === "development";
+const isProduction = process.env.NODE_ENV === "production";
 
 export function validateEnvironmentVariables() {
   const requiredVars = {
@@ -15,28 +15,24 @@ export function validateEnvironmentVariables() {
     .map(([key]) => key);
 
   if (missingVars.length > 0) {
-    // Only log detailed errors in development
-    if (isDevelopment) {
-      console.error("Missing required environment variables:", missingVars);
-      console.error(
-        "Environment check failed. This will cause authentication and API issues."
-      );
-    }
-    
-    // Create production-friendly error message
-    const errorMessage = isProduction 
-      ? "Application configuration error. Please check deployment settings."
-      : `Missing required environment variables: ${missingVars.join(", ")}`;
-    
-    throw new Error(errorMessage);
+    console.error("Missing required environment variables:", missingVars);
+    throw new Error(
+      `Missing required environment variables: ${missingVars.join(", ")}`
+    );
   }
 
-  // Only log success in development
-  if (isDevelopment) {
-    console.log("✅ All required environment variables are set");
-  }
-  
+  console.log("✅ All required environment variables are set");
   return true;
+}
+
+// Add this to your app initialization
+if (process.env.NODE_ENV === "production") {
+  try {
+    validateEnvironmentVariables();
+  } catch (error) {
+    console.error("Environment validation failed:", error);
+    process.exit(1);
+  }
 }
 
 export function getEnvironmentInfo() {
@@ -73,22 +69,20 @@ export function checkProductionEnvironment() {
       // Use console.error since we want these critical errors even in production
       console.error("🚨 PRODUCTION ENVIRONMENT ISSUE:");
       console.error("Missing environment variables:", missingVars);
-      console.error(
-        "Please configure these in your deployment environment."
-      );
-      
+      console.error("Please configure these in your deployment environment.");
+
       // Return structured error info for programmatic handling
       return {
         hasErrors: true,
         missingVars,
-        errorMessage: "Critical environment variables are missing"
+        errorMessage: "Critical environment variables are missing",
       };
     }
   }
-  
+
   return {
     hasErrors: false,
     missingVars: [],
-    errorMessage: null
+    errorMessage: null,
   };
 }

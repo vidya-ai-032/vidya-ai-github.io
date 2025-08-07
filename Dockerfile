@@ -2,8 +2,8 @@
 FROM --platform=linux/amd64 node:20.19.4-alpine AS builder
 WORKDIR /app
 
-# Install only essential dependencies
-RUN apk add --no-cache libc6-compat
+# Install dependencies for PDF processing
+RUN apk add --no-cache libc6-compat python3 make g++
 
 # Copy package files
 COPY package.json package-lock.json ./
@@ -13,8 +13,6 @@ RUN npm install --omit=optional
 
 # Copy source code
 COPY . .
-
-# Use existing Tailwind and PostCSS configs
 
 # Set environment variables
 ENV NEXT_TELEMETRY_DISABLED=1
@@ -28,6 +26,9 @@ RUN npm run build:docker
 FROM --platform=linux/amd64 node:20.19.4-alpine AS runner
 
 WORKDIR /app
+
+# Install runtime dependencies for PDF processing
+RUN apk add --no-cache libc6-compat
 
 # Set environment variables
 ENV NODE_ENV=production
