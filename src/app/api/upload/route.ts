@@ -13,6 +13,26 @@ const ACCEPTED_TYPES = [
 
 const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB
 
+// Helper function to validate extracted content
+function validateExtractedContent(content: string): boolean {
+  if (!content || content.trim().length === 0) {
+    return false;
+  }
+
+  // Check if content is too short (likely not meaningful)
+  if (content.trim().length < 10) {
+    return false;
+  }
+
+  // Check if content contains mostly special characters or numbers
+  const textOnly = content.replace(/[^a-zA-Z\s]/g, "");
+  if (textOnly.trim().length < content.length * 0.3) {
+    return false;
+  }
+
+  return true;
+}
+
 // Helper function to extract text from different file types
 async function extractTextFromFile(
   buffer: Buffer,
@@ -28,11 +48,12 @@ async function extractTextFromFile(
 
         // Check if we got meaningful text content
         if (data && data.text && data.text.trim().length > 0) {
+          const cleanText = data.text.trim().replace(/\s+/g, " ");
           console.log(
             "✅ PDF text extraction successful, length:",
-            data.text.length
+            cleanText.length
           );
-          return data.text;
+          return cleanText;
         } else {
           console.log("⚠️ PDF parsed but no text content found");
           return "";
@@ -55,12 +76,13 @@ async function extractTextFromFile(
             fullText += pageText + "\n";
           }
 
-          if (fullText.trim().length > 0) {
+          const cleanText = fullText.trim().replace(/\s+/g, " ");
+          if (cleanText.length > 0) {
             console.log(
               "✅ PDF text extraction successful with pdfjs, length:",
-              fullText.length
+              cleanText.length
             );
-            return fullText;
+            return cleanText;
           } else {
             console.log("⚠️ PDF parsed with pdfjs but no text content found");
             return "";
@@ -72,8 +94,12 @@ async function extractTextFromFile(
       }
     } else if (fileType === "text/plain") {
       const text = buffer.toString("utf-8");
-      console.log("✅ Text file extraction successful, length:", text.length);
-      return text;
+      const cleanText = text.trim().replace(/\s+/g, " ");
+      console.log(
+        "✅ Text file extraction successful, length:",
+        cleanText.length
+      );
+      return cleanText;
     } else if (fileType.includes("wordprocessingml.document")) {
       // For Word documents, we'll need to implement DOCX parsing
       console.log("⚠️ Word document parsing not implemented yet");
@@ -157,6 +183,8 @@ export async function POST(request: NextRequest) {
     // Extract text from the file
     console.log("🔍 Extracting text from file...");
     let extractedText = "";
+    let textExtractionError = null;
+
     try {
       extractedText = await extractTextFromFile(buffer, file.type, file.name);
       console.log(
@@ -165,47 +193,36 @@ export async function POST(request: NextRequest) {
       );
     } catch (error) {
       console.error("❌ Text extraction failed:", error);
+      textExtractionError = error;
       // Continue with upload even if text extraction fails
     }
 
     // Analyze the document if text was extracted
     let analysis = null;
     let description = null;
+    let analysisError = null;
 
-    // Check if text extraction actually succeeded (not an error message)
+    // Check if text extraction actually succeeded and content is valid
     const isTextExtractionSuccessful =
       extractedText &&
       extractedText.trim().length > 0 &&
       !extractedText.includes("Text extraction failed") &&
       !extractedText.includes("Word document content") &&
-      !extractedText.includes("Image content");
+      !extractedText.includes("Image content") &&
+      validateExtractedContent(extractedText);
 
     if (isTextExtractionSuccessful) {
       console.log("🔍 Analyzing document...");
-      try {
-        // Perform document analysis
-        console.log("📊 Performing document analysis...");
-        analysis = await GeminiService.analyzeDocument(
-          extractedText,
-          file.name
-        );
-        console.log("✅ Document analysis successful:", analysis?.subject);
+      console.log(
+        "📄 Content preview:",
+        extractedText.substring(0, 200) + "..."
+      );
 
-        // Generate content description
-        console.log("📝 Generating content description...");
-        description = await GeminiService.generateContentDescription(
-          extractedText,
-          {
-            subject: analysis.subject,
-            level: analysis.level,
-            chapterInfo: analysis.chapterSection,
-          }
-        );
-        console.log("✅ Content description generated");
-      } catch (error) {
-        console.error("❌ Document analysis failed:", error);
-        // Provide fallback analysis data
-        const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, ""); // Remove file extension
+      // Check if Gemini API key is available
+      if (!process.env.GOOGLE_GEMINI_API_KEY) {
+        console.error("❌ Gemini API key not found, using fallback analysis");
+        analysisError = new Error("Gemini API key not configured");
+        const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
         analysis = {
           topic: fileNameWithoutExt,
           subject: "General",
@@ -214,17 +231,82 @@ export async function POST(request: NextRequest) {
           chapterSection: fileNameWithoutExt,
           confidenceScore: 5,
         };
-
         description = {
           subject: "General",
           chapter: fileNameWithoutExt,
           level: "general",
           document_name: file.name,
           description:
-            "Document uploaded successfully. Content analysis will be available once processing is complete.",
+            "Document uploaded successfully. AI analysis requires API key configuration.",
           auto_generated: ["subject", "chapter", "level"],
           date_created: new Date().toISOString(),
         };
+      } else {
+        try {
+          // Perform document analysis with timeout
+          console.log("📊 Performing document analysis...");
+          const analysisPromise = GeminiService.analyzeDocument(
+            extractedText,
+            file.name
+          );
+
+          // Add timeout to prevent hanging
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("Analysis timeout")), 30000)
+          );
+
+          analysis = await Promise.race([analysisPromise, timeoutPromise]);
+          console.log("✅ Document analysis successful:", analysis?.subject);
+
+          // Generate content description with timeout
+          console.log("📝 Generating content description...");
+          const descriptionPromise = GeminiService.generateContentDescription(
+            extractedText,
+            {
+              subject: analysis.subject,
+              level: analysis.level,
+              chapterInfo: analysis.chapterSection,
+            }
+          );
+
+          const descriptionTimeoutPromise = new Promise((_, reject) =>
+            setTimeout(
+              () => reject(new Error("Description generation timeout")),
+              30000
+            )
+          );
+
+          description = await Promise.race([
+            descriptionPromise,
+            descriptionTimeoutPromise,
+          ]);
+          console.log("✅ Content description generated");
+        } catch (error) {
+          console.error("❌ Document analysis failed:", error);
+          analysisError = error;
+
+          // Provide fallback analysis data
+          const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, ""); // Remove file extension
+          analysis = {
+            topic: fileNameWithoutExt,
+            subject: "General",
+            level: "general",
+            documentTitle: file.name,
+            chapterSection: fileNameWithoutExt,
+            confidenceScore: 5,
+          };
+
+          description = {
+            subject: "General",
+            chapter: fileNameWithoutExt,
+            level: "general",
+            document_name: file.name,
+            description:
+              "Document uploaded successfully. Content analysis will be available once processing is complete.",
+            auto_generated: ["subject", "chapter", "level"],
+            date_created: new Date().toISOString(),
+          };
+        }
       }
     } else {
       console.log("⚠️ No text extracted, providing fallback analysis");
@@ -259,6 +341,13 @@ export async function POST(request: NextRequest) {
       analysis,
       description,
       textExtractionStatus: isTextExtractionSuccessful ? "success" : "failed",
+      analysisStatus: analysisError ? "failed" : "success",
+      errors: {
+        textExtraction: textExtractionError
+          ? textExtractionError.message
+          : null,
+        analysis: analysisError ? analysisError.message : null,
+      },
       message: isTextExtractionSuccessful
         ? "Document uploaded and analyzed successfully"
         : "Document uploaded successfully. Text extraction failed, using fallback analysis.",

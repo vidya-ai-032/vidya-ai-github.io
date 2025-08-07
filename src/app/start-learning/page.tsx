@@ -104,10 +104,10 @@ function StartLearningPageContent() {
 
   useEffect(() => {
     // Extract document data from URL parameters
-    const docNameParam = searchParams.get("docName");
-    const docContentParam = searchParams.get("docContent");
-    const docSubjectParam = searchParams.get("docSubject");
-    const docChapterParam = searchParams.get("docChapter");
+    const docNameParam = searchParams?.get("docName");
+    const docContentParam = searchParams?.get("docContent");
+    const docSubjectParam = searchParams?.get("docSubject");
+    const docChapterParam = searchParams?.get("docChapter");
 
     if (docNameParam) setDocName(decodeURIComponent(docNameParam));
     if (docSubjectParam) setDocSubject(decodeURIComponent(docSubjectParam));
