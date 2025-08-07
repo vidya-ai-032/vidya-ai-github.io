@@ -591,7 +591,7 @@ export default function LibraryPage() {
     if (doc.rawContent && doc.rawContent.trim()) {
       localStorage.setItem(`vidyaai_doc_content_${doc.name}`, doc.rawContent);
     }
-    
+
     // Navigate to the start learning page with document data
     const params = new URLSearchParams({
       docName: doc.name,
@@ -738,10 +738,13 @@ export default function LibraryPage() {
         `vidyaai_library_${session.user.email}`,
         JSON.stringify(updatedLibrary)
       );
-      
+
       // Also store the document content separately for easy access
       if (result.content && result.content.trim()) {
-        localStorage.setItem(`vidyaai_doc_content_${selectedFile.name}`, result.content);
+        localStorage.setItem(
+          `vidyaai_doc_content_${selectedFile.name}`,
+          result.content
+        );
       }
 
       // Clear form

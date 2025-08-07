@@ -119,7 +119,9 @@ function StartLearningPageContent() {
     } else if (docNameParam) {
       // Try to get content from localStorage using the specific key
       try {
-        const storedContent = localStorage.getItem(`vidyaai_doc_content_${docNameParam}`);
+        const storedContent = localStorage.getItem(
+          `vidyaai_doc_content_${docNameParam}`
+        );
         if (storedContent && storedContent.trim()) {
           setDocContent(storedContent);
         } else {
