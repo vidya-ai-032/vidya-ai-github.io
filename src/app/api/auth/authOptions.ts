@@ -23,6 +23,14 @@ export const authOptions: NextAuthOptions = {
       }
       return false;
     },
+    async redirect({ url, baseUrl }) {
+      console.log("Redirect callback:", { url, baseUrl });
+      // After successful sign-in, stay on the same page (modal will close automatically)
+      if (url.startsWith(baseUrl)) {
+        return url;
+      }
+      return url;
+    },
     async session({ session, token }) {
       console.log("Session callback:", { session, token });
       if (session.user) {
@@ -40,6 +48,7 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: "/auth/login",
+    signOut: "/",
   },
   session: {
     strategy: "jwt",

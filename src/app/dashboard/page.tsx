@@ -30,8 +30,22 @@ const quickActions = [
     title: "Upload Materials",
     description: "Add new study content",
     icon: "📁",
-    href: "/upload",
+    href: "/library",
     color: "bg-gradient-to-br from-green-500 to-green-600",
+  },
+  {
+    title: "Document Summary",
+    description: "Generate educational summaries",
+    icon: "📋",
+    href: "/summary",
+    color: "bg-gradient-to-br from-indigo-500 to-indigo-600",
+  },
+  {
+    title: "Test Upload",
+    description: "Debug upload functionality",
+    icon: "🧪",
+    href: "/test-upload",
+    color: "bg-gradient-to-br from-red-500 to-red-600",
   },
   {
     title: "Take a Quiz",

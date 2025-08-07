@@ -10,7 +10,6 @@ export function useAuth() {
   const login = async (provider?: string) => {
     try {
       await signIn(provider || "google", {
-        callbackUrl: "/dashboard",
         prompt: "select_account",
       });
     } catch (error) {
@@ -20,26 +19,16 @@ export function useAuth() {
 
   const logout = async () => {
     try {
-      // First attempt: Use NextAuth signOut with callback
+      // Redirect to landing page after logout
       await signOut({
-        callbackUrl: "https://vidya-ai-640566924297.us-central1.run.app",
+        callbackUrl: "/",
         redirect: true,
       });
-      
-      // Fallback: If the above doesn't work, use router navigation
-      // This ensures redirect works even if NextAuth redirect fails
-      setTimeout(() => {
-        if (typeof window !== "undefined") {
-          window.location.href =
-            "https://vidya-ai-640566924297.us-central1.run.app";
-        }
-      }, 100);
     } catch (error) {
       console.error("Logout error:", error);
-      // Emergency fallback: Direct navigation
+      // Emergency fallback: Direct navigation to landing page
       if (typeof window !== "undefined") {
-          window.location.href =
-          "https://vidya-ai-640566924297.us-central1.run.app";
+        window.location.href = "/";
       }
     }
   };

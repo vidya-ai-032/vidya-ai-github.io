@@ -1,182 +1,432 @@
 "use client";
+import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { useState } from "react";
+import SignInModal from "@/components/SignInModal";
 
-import { useAuth } from "@/hooks/useAuth";
-import { useEffect, useState } from "react";
-
-export default function Home() {
-  const { login, isLoading, status, isAuthenticated } = useAuth();
-  const [isClient, setIsClient] = useState(false);
-
-  // Ensure client-side rendering to prevent hydration mismatches
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  const handleGoogleLogin = async () => {
-    await login("google");
-  };
-
-  // Show loading state while determining authentication status
-  if (!isClient || status === "loading") {
-    return (
-      <main className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-2xl mb-6 animate-pulse">
-            <span className="text-3xl font-bold text-white">V</span>
-          </div>
-          <p className="text-xl text-gray-600">Loading...</p>
-        </div>
-      </main>
-    );
-  }
-
-  // If user is already authenticated, they can still see the landing page
-  // but with a different CTA
-  const isLoggedIn = isAuthenticated && status === "authenticated";
+export default function LandingPage() {
+  const { data: session } = useSession();
+  const [isSignInModalOpen, setIsSignInModalOpen] = useState(false);
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 relative overflow-hidden">
-      {/* Background decorative elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-400/20 to-purple-400/20 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-pink-400/20 to-orange-400/20 rounded-full blur-3xl"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-cyan-400/10 to-blue-400/10 rounded-full blur-3xl"></div>
-      </div>
-
-      <div className="relative z-10 flex items-center justify-center min-h-screen px-4 sm:px-6 lg:px-8 py-12">
-        <div className="w-full max-w-4xl mx-auto">
-          {/* Hero Section */}
-          <div className="text-center mb-12 animate-fadeIn">
-            <div className="mb-8">
-              <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl shadow-2xl mb-6">
-                <span className="text-3xl font-bold text-white">V</span>
-              </div>
-              <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-gray-900 mb-6 leading-tight">
-                Welcome to{" "}
-                <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
-                  VidyaAI
+    <div className="min-h-screen bg-white">
+      {/* Hero Section */}
+      <section className="relative bg-gradient-to-br from-blue-50 via-white to-purple-50 py-20 lg:py-32">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="space-y-8">
+              <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
+                Unlock the Power of AI for{" "}
+                <span className="text-blue-600">
+                  Educational Content Analysis
                 </span>
               </h1>
-              <p className="text-xl sm:text-2xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-                Revolutionize your learning experience with AI-powered tutoring,
-                voice-first interactions, and intelligent quiz generation.
+              <p className="text-xl text-gray-600 leading-relaxed max-w-2xl">
+                Effortlessly analyze and extract insights from educational
+                documents with our AI-powered workflow and enhance learning
+                outcomes.
               </p>
-            </div>
-          </div>
-
-          {/* Features Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 animate-slideIn">
-            <div className="card-modern p-8 text-center group">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                <span className="text-2xl">🎓</span>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">
-                AI Tutoring
-              </h3>
-              <p className="text-gray-600">
-                Personalized learning with voice-first AI tutor powered by
-                Google's Gemini
-              </p>
-            </div>
-
-            <div className="card-modern p-8 text-center group">
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                <span className="text-2xl">📝</span>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">
-                Smart Quizzes
-              </h3>
-              <p className="text-gray-600">
-                Intelligent quiz generation based on your uploaded study
-                materials
-              </p>
-            </div>
-
-            <div className="card-modern p-8 text-center group">
-              <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300">
-                <span className="text-2xl">📚</span>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">
-                Content Processing
-              </h3>
-              <p className="text-gray-600">
-                Upload any document and get instant AI-powered analysis and
-                insights
-              </p>
-            </div>
-          </div>
-
-          {/* CTA Section */}
-          <div className="text-center animate-scaleIn">
-            <div className="card-modern p-8 sm:p-12 max-w-2xl mx-auto">
-              <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-                {isLoggedIn ? "Continue Learning" : "Ready to Start Learning?"}
-              </h2>
-              <p className="text-lg text-gray-600 mb-8">
-                {isLoggedIn 
-                  ? "Welcome back! Continue your learning journey with VidyaAI."
-                  : "Join thousands of students already using VidyaAI to enhance their learning experience."
-                }
-              </p>
-              {isLoggedIn ? (
-                <a
-                  href="/dashboard"
-                  className="btn-modern text-lg px-8 py-4 inline-block"
-                >
-                  Go to Dashboard
-                </a>
-              ) : (
+              <div className="flex flex-col sm:flex-row gap-4">
                 <button
-                  onClick={handleGoogleLogin}
-                  disabled={isLoading}
-                  className="btn-modern text-lg px-8 py-4 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                  onClick={() => {
+                    if (session) {
+                      window.location.href = "/library";
+                    } else {
+                      setIsSignInModalOpen(true);
+                    }
+                  }}
+                  className="bg-blue-600 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-blue-700 transition-all duration-200 text-center shadow-lg hover:shadow-xl transform hover:-translate-y-1"
                 >
-                  <svg className="w-6 h-6 mr-3 inline" viewBox="0 0 24 24">
-                    <path
-                      fill="#4285F4"
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                    />
-                    <path
-                      fill="#EA4335"
-                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                    />
-                  </svg>
-                  {isLoading ? "Signing in..." : "Continue with Google"}
+                  Upload Document
                 </button>
-              )}
-              <p className="text-sm text-gray-500 mt-4">
-                Free to use • No credit card required • Privacy protected
-              </p>
-            </div>
-          </div>
-
-          {/* Stats Section */}
-          <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-6 animate-fadeIn">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-blue-600 mb-2">10K+</div>
-              <div className="text-gray-600">Active Students</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-purple-600 mb-2">
-                50K+
+                <Link
+                  href="#how-it-works"
+                  className="border-2 border-blue-600 text-blue-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-blue-50 transition-all duration-200 text-center"
+                >
+                  Learn More
+                </Link>
               </div>
-              <div className="text-gray-600">Quizzes Taken</div>
             </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-pink-600 mb-2">95%</div>
-              <div className="text-gray-600">Satisfaction Rate</div>
+            <div className="relative">
+              {/* Hero Illustration - Collaborative Study Scene */}
+              <div className="relative bg-white rounded-2xl shadow-2xl p-8 transform rotate-1 hover:rotate-0 transition-transform duration-300">
+                <div className="relative w-full h-96 bg-gradient-to-br from-blue-100 to-purple-100 rounded-xl overflow-hidden">
+                  {/* Collaborative Study Illustration */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="relative w-full h-full">
+                      {/* Table */}
+                      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 w-80 h-4 bg-amber-800 rounded-lg shadow-lg"></div>
+
+                      {/* People around the table */}
+                      {/* Person 1 - Left (Black woman with orange shirt) */}
+                      <div className="absolute bottom-12 left-8">
+                        <div className="w-16 h-16 bg-orange-400 rounded-full flex items-center justify-center shadow-lg">
+                          <div className="w-12 h-12 bg-orange-300 rounded-full"></div>
+                        </div>
+                        <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-8 h-2 bg-orange-400 rounded-full"></div>
+                      </div>
+
+                      {/* Person 2 - Middle-Left (Asian man with teal shirt) */}
+                      <div className="absolute bottom-12 left-1/2 transform -translate-x-1/2 -ml-8">
+                        <div className="w-16 h-16 bg-teal-400 rounded-full flex items-center justify-center shadow-lg">
+                          <div className="w-12 h-12 bg-teal-300 rounded-full"></div>
+                        </div>
+                        <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-8 h-2 bg-teal-400 rounded-full"></div>
+                      </div>
+
+                      {/* Person 3 - Middle-Right (Caucasian woman with teal shirt) */}
+                      <div className="absolute bottom-12 right-1/2 transform translate-x-8">
+                        <div className="w-16 h-16 bg-teal-400 rounded-full flex items-center justify-center shadow-lg">
+                          <div className="w-12 h-12 bg-teal-300 rounded-full"></div>
+                        </div>
+                        <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-8 h-2 bg-teal-400 rounded-full"></div>
+                      </div>
+
+                      {/* Person 4 - Right (South Asian man with yellow shirt) */}
+                      <div className="absolute bottom-12 right-8">
+                        <div className="w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center shadow-lg">
+                          <div className="w-12 h-12 bg-yellow-300 rounded-full"></div>
+                        </div>
+                        <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-8 h-2 bg-yellow-400 rounded-full"></div>
+                      </div>
+
+                      {/* Laptop in center */}
+                      <div className="absolute bottom-16 left-1/2 transform -translate-x-1/2">
+                        <div className="w-20 h-12 bg-gray-300 rounded-lg border-2 border-gray-400 shadow-lg"></div>
+                        <div className="w-24 h-1 bg-gray-400 rounded-full mx-auto mt-1"></div>
+                      </div>
+
+                      {/* Books */}
+                      <div className="absolute bottom-16 left-16">
+                        <div className="w-8 h-10 bg-blue-500 rounded-sm shadow-md"></div>
+                      </div>
+                      <div className="absolute bottom-16 right-16">
+                        <div className="w-8 h-10 bg-red-500 rounded-sm shadow-md"></div>
+                      </div>
+
+                      {/* Plant in background */}
+                      <div className="absolute top-4 right-4">
+                        <div className="w-8 h-12 bg-green-400 rounded-full shadow-md"></div>
+                        <div className="absolute -top-2 -right-1 w-4 h-4 bg-green-300 rounded-full"></div>
+                        <div className="absolute -top-1 -left-1 w-3 h-3 bg-green-300 rounded-full"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </main>
+      </section>
+
+      {/* How It Works Section */}
+      <section id="how-it-works" className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              How It Works
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Simple steps to transform your educational content
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Step 1 */}
+            <div className="text-center group">
+              <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                <svg
+                  className="w-10 h-10 text-blue-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                Upload Your Document
+              </h3>
+              <p className="text-gray-600 leading-relaxed">
+                Drag and drop or select your educational files. We support PDF,
+                DOCX, PPTX, and TXT formats.
+              </p>
+            </div>
+
+            {/* Step 2 */}
+            <div className="text-center group">
+              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                <svg
+                  className="w-10 h-10 text-green-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                AI-Powered Analysis
+              </h3>
+              <p className="text-gray-600 leading-relaxed">
+                Our advanced AI algorithms analyze content, identify key
+                concepts, relationships, and patterns.
+              </p>
+            </div>
+
+            {/* Step 3 */}
+            <div className="text-center group">
+              <div className="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                <svg
+                  className="w-10 h-10 text-purple-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                Gain Valuable Insights
+              </h3>
+              <p className="text-gray-600 leading-relaxed">
+                Receive comprehensive reports and visualizations for deeper
+                understanding of your content.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Key Features Section */}
+      <section id="features" className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">
+              Key Features
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Everything you need for effective educational content analysis
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Feature 1 */}
+            <div className="text-center group">
+              <div className="w-20 h-20 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                <svg
+                  className="w-10 h-10 text-orange-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                Content Summarization
+              </h3>
+              <p className="text-gray-600 leading-relaxed">
+                Get concise summaries of lengthy documents, making it easier to
+                understand key points quickly.
+              </p>
+            </div>
+
+            {/* Feature 2 */}
+            <div className="text-center group">
+              <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                <svg
+                  className="w-10 h-10 text-blue-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                Performance Analysis
+              </h3>
+              <p className="text-gray-600 leading-relaxed">
+                Track student progress and identify areas for improvement with
+                detailed analytics.
+              </p>
+            </div>
+
+            {/* Feature 3 */}
+            <div className="text-center group">
+              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg">
+                <svg
+                  className="w-10 h-10 text-green-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-3">
+                Personalized Recommendations
+              </h3>
+              <p className="text-gray-600 leading-relaxed">
+                Receive tailored recommendations for learning materials based on
+                your content analysis.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Call to Action */}
+      <section className="py-20 bg-blue-600 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 opacity-90"></div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-4xl font-bold text-white mb-6">
+            Ready to Transform Your Educational Content Analysis?
+          </h2>
+          <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+            Join thousands of educators and students who are already using Vidya
+            AI to enhance their learning experience.
+          </p>
+          <button
+            onClick={() => {
+              if (session) {
+                window.location.href = "/library";
+              } else {
+                setIsSignInModalOpen(true);
+              }
+            }}
+            className="bg-white text-blue-600 px-8 py-4 rounded-lg font-semibold text-lg hover:bg-gray-100 transition-all duration-200 inline-block shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+          >
+            Get Started
+          </button>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-gray-900 text-white py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div>
+              <h3 className="text-xl font-bold mb-4">Vidya AI</h3>
+              <p className="text-gray-400 leading-relaxed">
+                Transforming education through AI-powered content analysis.
+              </p>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-4">Product</h4>
+              <ul className="space-y-2 text-gray-400">
+                <li>
+                  <Link
+                    href="#features"
+                    className="hover:text-white transition-colors"
+                  >
+                    Features
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="#pricing"
+                    className="hover:text-white transition-colors"
+                  >
+                    Pricing
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/library"
+                    className="hover:text-white transition-colors"
+                  >
+                    Library
+                  </Link>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-4">Support</h4>
+              <ul className="space-y-2 text-gray-400">
+                <li>
+                  <Link
+                    href="#support"
+                    className="hover:text-white transition-colors"
+                  >
+                    Help Center
+                  </Link>
+                </li>
+                <li>
+                  <Link href="#" className="hover:text-white transition-colors">
+                    Contact Us
+                  </Link>
+                </li>
+                <li>
+                  <Link href="#" className="hover:text-white transition-colors">
+                    Documentation
+                  </Link>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-4">Company</h4>
+              <ul className="space-y-2 text-gray-400">
+                <li>
+                  <Link href="#" className="hover:text-white transition-colors">
+                    About
+                  </Link>
+                </li>
+                <li>
+                  <Link href="#" className="hover:text-white transition-colors">
+                    Blog
+                  </Link>
+                </li>
+                <li>
+                  <Link href="#" className="hover:text-white transition-colors">
+                    Careers
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+            <p>&copy; 2024 Vidya AI. All rights reserved.</p>
+          </div>
+        </div>
+      </footer>
+
+      {/* Sign In Modal */}
+      <SignInModal
+        isOpen={isSignInModalOpen}
+        onClose={() => setIsSignInModalOpen(false)}
+      />
+    </div>
   );
 }

@@ -37,15 +37,7 @@ interface GeminiError extends Error {
 
 // Helper to get the Gemini model using the user's key if present
 function getGeminiModel() {
-  if (typeof window !== "undefined") {
-    const userKey = localStorage.getItem("vidyaai_gemini_api_key");
-    if (userKey) {
-      console.log("Using user-provided Gemini API key");
-      const genAI = new GoogleGenerativeAI(userKey);
-      return genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    }
-  }
-  // Fallback to server-side or default key
+  // For server-side API calls, always use the environment variable
   const serverKey = process.env.GOOGLE_GEMINI_API_KEY;
   if (!serverKey) {
     console.error("🚨 Gemini API key is missing from environment variables");
@@ -54,7 +46,7 @@ function getGeminiModel() {
       "Your Gemini API key is invalid or missing. Please check your settings."
     );
   }
-  console.log("Using server-side Gemini API key");
+  console.log("✅ Using server-side Gemini API key");
   const genAI = new GoogleGenerativeAI(serverKey);
   return genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 }
@@ -146,8 +138,44 @@ function safeParseGeminiJSON(raw: string): any {
   }
 }
 
+export interface DocumentAnalysis {
+  topic: string;
+  subject: string;
+  level: string;
+  documentTitle: string;
+  chapterSection: string;
+  confidenceScore: number;
+}
+
+export interface ContentDescription {
+  subject: string;
+  chapter: string;
+  level: string;
+  document_name: string;
+  description: string;
+  auto_generated: string[];
+  date_created: string;
+}
+
+export interface DocumentSummary {
+  summary: string;
+  academicLevel: string;
+  keyTakeaways: string[];
+  estimatedReadingTime: string;
+}
+
 export class GeminiService {
   static getModel() {
+    // For client-side usage, check for user-provided key first
+    if (typeof window !== "undefined") {
+      const userKey = localStorage.getItem("vidyaai_gemini_api_key");
+      if (userKey) {
+        console.log("Using user-provided Gemini API key");
+        const genAI = new GoogleGenerativeAI(userKey);
+        return genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      }
+    }
+    // Fallback to server-side key
     return getGeminiModel();
   }
   // Content Processing Service
@@ -566,6 +594,313 @@ export class GeminiService {
     } catch (error) {
       console.error("Error extracting subject/themes:", error);
       throw new Error("Failed to extract subject/themes");
+    }
+  }
+
+  // Document Analysis & Topic Extraction
+  static async analyzeDocument(
+    content: string,
+    filename?: string
+  ): Promise<DocumentAnalysis> {
+    try {
+      const prompt = `
+You are an expert document analysis AI specialized in educational content processing. Your task is to analyze the uploaded document and extract key information with high accuracy.
+
+TASK: Analyze the uploaded document and provide:
+1. Primary topic/subject identification based on actual content
+2. Suggested document title that reflects the main topic
+3. Subject classification (Mathematics, Science, History, Literature, etc.)
+4. Estimated academic level (elementary, middle school, high school, college)
+5. Chapter/section name that is SPECIFIC and CONTENT-BASED
+
+CRITICAL REQUIREMENTS FOR CHAPTER/SECTION NAMING:
+- DO NOT use generic terms like "Introduction", "Chapter 1", "Overview", "Basics"
+- DO NOT use inferred or placeholder names
+- MUST extract the actual main topic or concept from the document content
+- MUST be specific and descriptive of what the document actually covers
+- MUST be based on the primary subject matter discussed in the content
+- Examples of GOOD names: "Respiratory System Functions", "Quadratic Equations", "World War II Causes", "Shakespeare's Sonnets"
+- Examples of BAD names: "Introduction", "Chapter 1", "Basic Concepts", "Overview"
+
+OUTPUT FORMAT:
+- Topic: [Clear, concise topic heading based on actual content]
+- Subject: [Academic subject category]
+- Level: [Educational level based on content complexity]
+- Document Title: [Specific title reflecting the main topic]
+- Chapter/Section: [SPECIFIC content-based name, NOT generic]
+- Confidence Score: [1-10 scale for accuracy]
+
+CONSTRAINTS:
+- Keep topic headings under 10 words
+- Use standard academic subject classifications
+- Base level assessment on vocabulary complexity and concepts
+- Chapter/Section MUST be content-specific, not generic
+- If content is unclear, use "Content Analysis Required" as Chapter/Section
+
+Document Content:
+${content}
+
+${filename ? `Original Filename: ${filename}` : ""}
+
+Return the analysis as a JSON object with the exact field names specified above.
+      `;
+
+      const model = getGeminiModel();
+      const result = await generateWithRetry(model, prompt);
+      const response = await result.response;
+      const text = response.text();
+
+      // Extract JSON from the response
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const analysis = safeParseGeminiJSON(jsonMatch[0]);
+
+        // Post-process to ensure chapter name is not generic
+        if (analysis.chapterSection) {
+          const genericTerms = [
+            "introduction",
+            "chapter 1",
+            "overview",
+            "basics",
+            "fundamentals",
+            "getting started",
+            "preliminary",
+            "intro",
+            "chapter one",
+            "basic concepts",
+          ];
+
+          const chapterLower = analysis.chapterSection.toLowerCase();
+          const isGeneric = genericTerms.some(
+            (term) => chapterLower.includes(term) || chapterLower === term
+          );
+
+          if (isGeneric) {
+            // Try to extract a better name from the topic or content
+            analysis.chapterSection =
+              analysis.topic ||
+              analysis.documentTitle ||
+              "Content Analysis Required";
+          }
+
+          // If chapterSection is still generic or missing, try to extract from content
+          if (
+            !analysis.chapterSection ||
+            analysis.chapterSection === "Content Analysis Required"
+          ) {
+            // Extract first few meaningful words from content as fallback
+            const contentWords = content.split(/\s+/).slice(0, 5).join(" ");
+            if (contentWords.length > 10) {
+              analysis.chapterSection = contentWords + "...";
+            } else {
+              analysis.chapterSection = "Document Content";
+            }
+          }
+        }
+
+        return analysis;
+      }
+
+      throw new Error("Failed to parse document analysis response");
+    } catch (error) {
+      console.error("Error analyzing document:", error);
+      throw new Error("Failed to analyze document");
+    }
+  }
+
+  // Content Description Generation
+  static async generateContentDescription(
+    content: string,
+    userContext?: {
+      subject?: string;
+      level?: string;
+      chapterInfo?: string;
+    }
+  ): Promise<ContentDescription> {
+    try {
+      const prompt = `
+You are an educational content curator AI. Generate comprehensive descriptions for uploaded learning materials.
+
+INPUTS RECEIVED:
+- Document content: [DOCUMENT_TEXT]
+- User context: [SUBJECT, LEVEL, CHAPTER_INFO]
+
+GENERATE:
+1. Auto-complete missing fields:
+   - Subject (if not provided)
+   - Chapter name (based on ACTUAL content analysis)
+   - Document name (if filename is unclear)
+   - Academic level (based on content complexity)
+
+CRITICAL REQUIREMENTS FOR CHAPTER NAMING:
+- DO NOT use generic terms like "Introduction", "Chapter 1", "Overview", "Basics"
+- DO NOT use inferred or placeholder names
+- MUST extract the actual main topic or concept from the document content
+- MUST be specific and descriptive of what the document actually covers
+- MUST be based on the primary subject matter discussed in the content
+- Examples of GOOD names: "Respiratory System Functions", "Quadratic Equations", "World War II Causes", "Shakespeare's Sonnets"
+- Examples of BAD names: "Introduction", "Chapter 1", "Basic Concepts", "Overview"
+- If content is unclear, use "Content Analysis Required"
+
+2. Create a compelling description (50-150 words) that includes:
+   - What students will learn
+   - Key concepts covered
+   - Prerequisites (if any)
+   - Learning outcomes
+
+FORMAT:
+{
+  "subject": "subject_name",
+  "chapter": "SPECIFIC_CONTENT_BASED_CHAPTER_NAME",
+  "level": "academic_level",
+  "document_name": "clear_document_title",
+  "description": "compelling_description",
+  "auto_generated": ["field1", "field2"],
+  "date_created": "auto_timestamp"
+}
+
+QUALITY STANDARDS:
+- Use engaging, student-friendly language
+- Highlight practical applications
+- Avoid jargon without explanation
+- Focus on learning benefits
+- Chapter name MUST be content-specific, not generic
+
+Document Content:
+${content}
+
+${userContext ? `User Context: ${JSON.stringify(userContext)}` : ""}
+
+Return the description as a JSON object with the exact field names specified above.
+      `;
+
+      const model = getGeminiModel();
+      const result = await generateWithRetry(model, prompt);
+      const response = await result.response;
+      const text = response.text();
+
+      // Extract JSON from the response
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = safeParseGeminiJSON(jsonMatch[0]);
+
+        // Post-process to ensure chapter name is not generic
+        if (parsed.chapter) {
+          const genericTerms = [
+            "introduction",
+            "chapter 1",
+            "overview",
+            "basics",
+            "fundamentals",
+            "getting started",
+            "preliminary",
+            "intro",
+            "chapter one",
+            "basic concepts",
+          ];
+
+          const chapterLower = parsed.chapter.toLowerCase();
+          const isGeneric = genericTerms.some(
+            (term) => chapterLower.includes(term) || chapterLower === term
+          );
+
+          if (isGeneric) {
+            // Try to extract a better name from the subject or document name
+            parsed.chapter =
+              parsed.document_name ||
+              parsed.subject ||
+              "Content Analysis Required";
+          }
+
+          // If chapter is still generic or missing, try to extract from content
+          if (
+            !parsed.chapter ||
+            parsed.chapter === "Content Analysis Required"
+          ) {
+            // Extract first few meaningful words from content as fallback
+            const contentWords = content.split(/\s+/).slice(0, 5).join(" ");
+            if (contentWords.length > 10) {
+              parsed.chapter = contentWords + "...";
+            } else {
+              parsed.chapter = "Document Content";
+            }
+          }
+        }
+
+        // Ensure date_created is set if not provided
+        if (!parsed.date_created) {
+          parsed.date_created = new Date().toISOString();
+        }
+        return parsed;
+      }
+
+      throw new Error("Failed to parse content description response");
+    } catch (error) {
+      console.error("Error generating content description:", error);
+      throw new Error("Failed to generate content description");
+    }
+  }
+
+  // Document Summarization
+  static async summarizeDocument(
+    content: string,
+    academicLevel?: string
+  ): Promise<DocumentSummary> {
+    try {
+      const prompt = `
+You are an expert educational summarizer. Create comprehensive yet accessible summaries for student learning.
+
+TASK: Summarize the provided educational document in exactly 10-12 sentences.
+
+DOCUMENT CONTENT: ${content}
+STUDENT LEVEL: ${academicLevel || "general"}
+
+REQUIREMENTS:
+1. First sentence: Hook that explains why this topic matters
+2. Sentences 2-3: Core concept introduction with context
+3. Sentences 4-8: Key points, theories, or processes explained
+4. Sentences 9-10: Real-world applications or examples
+5. Sentences 11-12: Conclusion with key takeaways
+
+STYLE GUIDELINES:
+- Use active voice and clear transitions
+- Adapt vocabulary to student level
+- Include specific examples from the document
+- Maintain logical flow between concepts
+- End with actionable insights
+
+AVOID:
+- Bullet points or numbered lists
+- Technical jargon without explanation
+- Redundant information
+- Overly complex sentence structures
+
+OUTPUT FORMAT:
+{
+  "summary": "Complete 10-12 sentence summary following the requirements above",
+  "academicLevel": "Detected or provided academic level",
+  "keyTakeaways": ["Takeaway 1", "Takeaway 2", "Takeaway 3"],
+  "estimatedReadingTime": "X minutes"
+}
+
+Return the summary as a JSON object with the exact field names specified above.
+      `;
+
+      const model = getGeminiModel();
+      const result = await generateWithRetry(model, prompt);
+      const response = await result.response;
+      const text = response.text();
+
+      // Extract JSON from the response
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        return safeParseGeminiJSON(jsonMatch[0]);
+      }
+
+      throw new Error("Failed to parse document summary response");
+    } catch (error) {
+      console.error("Error summarizing document:", error);
+      throw new Error("Failed to summarize document");
     }
   }
 }

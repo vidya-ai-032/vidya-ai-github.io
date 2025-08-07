@@ -1,5 +1,4 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import pdfParse from "pdf-parse";
 import { IncomingForm, File, Fields, Files } from "formidable";
 import fs from "fs";
 
@@ -38,15 +37,23 @@ export default async function handler(
           return resolve();
         }
         const buffer = fs.readFileSync(file.filepath);
-        const data = await pdfParse(buffer);
-        if (!data.text || data.text.trim().length === 0) {
-          console.error(
-            "[extract-text] PDF text extraction returned empty text"
-          );
-          res.status(422).json({ error: "Failed to extract text from PDF" });
+        // Dynamic import to avoid initialization issues
+        try {
+          const pdfParse = (await import("pdf-parse")).default;
+          const data = await pdfParse(buffer);
+          if (!data.text || data.text.trim().length === 0) {
+            console.error(
+              "[extract-text] PDF text extraction returned empty text"
+            );
+            res.status(422).json({ error: "Failed to extract text from PDF" });
+            return resolve();
+          }
+          res.status(200).json({ text: data.text });
+        } catch (pdfError) {
+          console.error("[extract-text] PDF parsing error:", pdfError);
+          res.status(500).json({ error: "PDF parsing failed" });
           return resolve();
         }
-        res.status(200).json({ text: data.text });
         resolve();
       });
     });
