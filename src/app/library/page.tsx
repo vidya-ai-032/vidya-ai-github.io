@@ -587,8 +587,12 @@ export default function LibraryPage() {
   };
 
   const handleStartLearning = (doc: LibraryDoc) => {
+    // Store document content in localStorage for the start learning page
+    if (doc.rawContent && doc.rawContent.trim()) {
+      localStorage.setItem(`vidyaai_doc_content_${doc.name}`, doc.rawContent);
+    }
+    
     // Navigate to the start learning page with document data
-    // Don't pass content in URL as it might be too large
     const params = new URLSearchParams({
       docName: doc.name,
       docSubject: doc.subject,
@@ -734,6 +738,11 @@ export default function LibraryPage() {
         `vidyaai_library_${session.user.email}`,
         JSON.stringify(updatedLibrary)
       );
+      
+      // Also store the document content separately for easy access
+      if (result.content && result.content.trim()) {
+        localStorage.setItem(`vidyaai_doc_content_${selectedFile.name}`, result.content);
+      }
 
       // Clear form
       setSelectedFile(null);

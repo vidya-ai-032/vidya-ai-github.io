@@ -5,9 +5,12 @@ import { join } from "path";
 export async function POST(request: NextRequest) {
   try {
     const { fileName } = await request.json();
-    
+
     if (!fileName) {
-      return NextResponse.json({ error: "fileName is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "fileName is required" },
+        { status: 400 }
+      );
     }
 
     const filePath = join(process.cwd(), "uploads", fileName);
@@ -27,7 +30,7 @@ export async function POST(request: NextRequest) {
         textLength: data.text?.length || 0,
         numPages: data.numpages,
         info: data.info,
-        textPreview: data.text?.substring(0, 200) || "No text"
+        textPreview: data.text?.substring(0, 200) || "No text",
       };
       console.log("✅ pdf-parse successful:", pdfParseResult);
     } catch (error) {
@@ -42,7 +45,7 @@ export async function POST(request: NextRequest) {
       const pdfjsLib = await import("pdfjs-dist");
       const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
       let fullText = "";
-      
+
       for (let i = 1; i <= pdf.numPages; i++) {
         const page = await pdf.getPage(i);
         const textContent = await page.getTextContent();
@@ -55,7 +58,7 @@ export async function POST(request: NextRequest) {
       pdfjsResult = {
         textLength: fullText.length,
         numPages: pdf.numPages,
-        textPreview: fullText.substring(0, 200) || "No text"
+        textPreview: fullText.substring(0, 200) || "No text",
       };
       console.log("✅ pdfjs-dist successful:", pdfjsResult);
     } catch (error) {
@@ -69,19 +72,21 @@ export async function POST(request: NextRequest) {
       pdfParse: {
         success: !pdfParseError,
         result: pdfParseResult,
-        error: pdfParseError
+        error: pdfParseError,
       },
       pdfjs: {
         success: !pdfjsError,
         result: pdfjsResult,
-        error: pdfjsError
-      }
+        error: pdfjsError,
+      },
     });
-
   } catch (error) {
     console.error("Test PDF parse error:", error);
     return NextResponse.json(
-      { error: "Failed to test PDF parsing", details: error instanceof Error ? error.message : "Unknown error" },
+      {
+        error: "Failed to test PDF parsing",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 500 }
     );
   }

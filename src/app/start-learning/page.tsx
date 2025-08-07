@@ -117,16 +117,22 @@ function StartLearningPageContent() {
     if (docContentParam) {
       setDocContent(decodeURIComponent(docContentParam));
     } else if (docNameParam) {
-      // If content not in URL, try to get from localStorage
+      // Try to get content from localStorage using the specific key
       try {
-        const libraryData = localStorage.getItem(
-          `vidyaai_library_${session?.user?.email}`
-        );
-        if (libraryData) {
-          const library = JSON.parse(libraryData);
-          const doc = library.find((d: any) => d.name === docNameParam);
-          if (doc && doc.rawContent) {
-            setDocContent(doc.rawContent);
+        const storedContent = localStorage.getItem(`vidyaai_doc_content_${docNameParam}`);
+        if (storedContent && storedContent.trim()) {
+          setDocContent(storedContent);
+        } else {
+          // Fallback to library data
+          const libraryData = localStorage.getItem(
+            `vidyaai_library_${session?.user?.email}`
+          );
+          if (libraryData) {
+            const library = JSON.parse(libraryData);
+            const doc = library.find((d: any) => d.name === docNameParam);
+            if (doc && doc.rawContent && doc.rawContent.trim()) {
+              setDocContent(doc.rawContent);
+            }
           }
         }
       } catch (error) {
