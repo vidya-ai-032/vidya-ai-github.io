@@ -1,74 +1,87 @@
 import { NextRequest, NextResponse } from "next/server";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 export async function POST(request: NextRequest) {
-  console.log("🔍 Test PDF Parse API called");
-
   try {
-    const formData = await request.formData();
-    const file = formData.get("file") as File | null;
-
-    if (!file) {
-      return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+    const { fileName } = await request.json();
+    
+    if (!fileName) {
+      return NextResponse.json({ error: "fileName is required" }, { status: 400 });
     }
 
-    if (file.type !== "application/pdf") {
-      return NextResponse.json(
-        { error: "File must be a PDF" },
-        { status: 400 }
-      );
-    }
+    const filePath = join(process.cwd(), "uploads", fileName);
+    console.log("Testing PDF parsing for:", filePath);
 
-    console.log("📄 PDF file received:", file.name, file.size);
+    // Read the file
+    const buffer = readFileSync(filePath);
+    console.log("File size:", buffer.length);
 
-    // Test dynamic import of pdf-parse
+    // Test pdf-parse
+    let pdfParseResult = null;
+    let pdfParseError = null;
     try {
-      const arrayBuffer = await file.arrayBuffer();
-      const buffer = Buffer.from(arrayBuffer);
-
-      console.log("📖 Reading PDF buffer...");
-      try {
-        const pdfParse = (await import("pdf-parse")).default;
-        console.log("✅ pdf-parse imported successfully");
-
-        const data = await pdfParse(buffer);
-        console.log(
-          "✅ PDF parsed successfully, text length:",
-          data.text?.length || 0
-        );
-
-        return NextResponse.json({
-          success: true,
-          textLength: data.text?.length || 0,
-          textPreview:
-            data.text?.substring(0, 200) + "..." || "No text extracted",
-        });
-      } catch (pdfError) {
-        console.error("❌ PDF parsing error:", pdfError);
-        return NextResponse.json({
-          success: false,
-          error: "PDF parsing failed",
-          details:
-            pdfError instanceof Error ? pdfError.message : "Unknown error",
-        });
-      }
-    } catch (parseError) {
-      console.error("❌ PDF parsing error:", parseError);
-      return NextResponse.json(
-        {
-          error: "PDF parsing failed",
-          details:
-            parseError instanceof Error ? parseError.message : "Unknown error",
-        },
-        { status: 500 }
-      );
+      const pdfParse = (await import("pdf-parse")).default;
+      const data = await pdfParse(buffer);
+      pdfParseResult = {
+        textLength: data.text?.length || 0,
+        numPages: data.numpages,
+        info: data.info,
+        textPreview: data.text?.substring(0, 200) || "No text"
+      };
+      console.log("✅ pdf-parse successful:", pdfParseResult);
+    } catch (error) {
+      pdfParseError = error instanceof Error ? error.message : String(error);
+      console.error("❌ pdf-parse failed:", pdfParseError);
     }
-  } catch (error) {
-    console.error("❌ Test PDF parse error:", error);
-    return NextResponse.json(
-      {
-        error: "Test failed",
-        details: error instanceof Error ? error.message : "Unknown error",
+
+    // Test pdfjs-dist
+    let pdfjsResult = null;
+    let pdfjsError = null;
+    try {
+      const pdfjsLib = await import("pdfjs-dist");
+      const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+      let fullText = "";
+      
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item: any) => item.str)
+          .join(" ");
+        fullText += pageText + "\n";
+      }
+
+      pdfjsResult = {
+        textLength: fullText.length,
+        numPages: pdf.numPages,
+        textPreview: fullText.substring(0, 200) || "No text"
+      };
+      console.log("✅ pdfjs-dist successful:", pdfjsResult);
+    } catch (error) {
+      pdfjsError = error instanceof Error ? error.message : String(error);
+      console.error("❌ pdfjs-dist failed:", pdfjsError);
+    }
+
+    return NextResponse.json({
+      fileName,
+      fileSize: buffer.length,
+      pdfParse: {
+        success: !pdfParseError,
+        result: pdfParseResult,
+        error: pdfParseError
       },
+      pdfjs: {
+        success: !pdfjsError,
+        result: pdfjsResult,
+        error: pdfjsError
+      }
+    });
+
+  } catch (error) {
+    console.error("Test PDF parse error:", error);
+    return NextResponse.json(
+      { error: "Failed to test PDF parsing", details: error instanceof Error ? error.message : "Unknown error" },
       { status: 500 }
     );
   }
