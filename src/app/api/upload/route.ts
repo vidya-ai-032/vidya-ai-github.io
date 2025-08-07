@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { mkdirSync, writeFileSync, readFileSync } from "fs";
+import { mkdirSync, writeFileSync } from "fs";
 import { join, extname } from "path";
 import { GeminiService } from "@/lib/gemini";
+import { validateExtractedContent, cleanTextContent, detectFileType, assessContentQuality } from "@/lib/textUtils";
 
 const ACCEPTED_TYPES = [
   "application/pdf",
@@ -13,91 +14,16 @@ const ACCEPTED_TYPES = [
 
 const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB
 
-// Helper function to detect file type more robustly
-function detectFileType(fileName: string, mimeType: string): string {
-  const extension = fileName.toLowerCase().split(".").pop() || "";
-
-  // Map common extensions to MIME types
-  const extensionToMimeType: { [key: string]: string } = {
-    pdf: "application/pdf",
-    txt: "text/plain",
-    md: "text/plain",
-    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    doc: "application/msword",
-    jpg: "image/jpeg",
-    jpeg: "image/jpeg",
-    png: "image/png",
-    gif: "image/gif",
-    bmp: "image/bmp",
-  };
-
-  // Use MIME type if available, otherwise fall back to extension
-  if (mimeType && mimeType !== "application/octet-stream") {
-    return mimeType;
-  }
-
-  return extensionToMimeType[extension] || mimeType;
-}
-
-// Enhanced validation function
-function validateExtractedContent(content: string): boolean {
-  if (!content || content.trim().length === 0) {
-    return false;
-  }
-
-  // Check if content is too short (likely not meaningful)
-  if (content.trim().length < 20) {
-    return false;
-  }
-
-  // Check if content contains mostly special characters or numbers
-  const textOnly = content.replace(/[^a-zA-Z\s]/g, "");
-  if (textOnly.trim().length < content.length * 0.2) {
-    return false;
-  }
-
-  // Check for common error messages
-  const errorPatterns = [
-    "text extraction failed",
-    "word document parsing not implemented",
-    "image ocr not implemented",
-    "unsupported file type",
-  ];
-
-  const lowerContent = content.toLowerCase();
-  if (errorPatterns.some((pattern) => lowerContent.includes(pattern))) {
-    return false;
-  }
-
-  return true;
-}
-
-// Helper function to clean and normalize text content
-function cleanTextContent(text: string): string {
-  if (!text) return "";
-
-  return text
-    .trim()
-    .replace(/\s+/g, " ") // Replace multiple whitespace with single space
-    .replace(/\n\s*\n/g, "\n") // Remove empty lines
-    .replace(/[^\w\s\.\,\;\:\!\?\-\(\)\[\]\{\}]/g, " ") // Keep only readable characters
-    .replace(/\s+/g, " ") // Clean up any remaining multiple spaces
-    .trim();
-}
-
 // Enhanced text extraction function
 async function extractTextFromFile(
   buffer: Buffer,
   fileType: string,
   fileName: string
-): Promise<{ text: string; method: string; error?: string }> {
+): Promise<{ text: string; method: string; error?: string; quality?: any }> {
   try {
     console.log(`🔍 Starting text extraction for: ${fileName} (${fileType})`);
 
-    if (
-      fileType === "application/pdf" ||
-      fileName.toLowerCase().endsWith(".pdf")
-    ) {
+    if (fileType === "application/pdf" || fileName.toLowerCase().endsWith(".pdf")) {
       console.log("📄 Processing PDF file...");
 
       // Method 1: Try pdf-parse first
@@ -108,10 +34,9 @@ async function extractTextFromFile(
         if (data && data.text && data.text.trim().length > 0) {
           const cleanText = cleanTextContent(data.text);
           if (validateExtractedContent(cleanText)) {
-            console.log(
-              `✅ PDF text extraction successful with pdf-parse, length: ${cleanText.length}`
-            );
-            return { text: cleanText, method: "pdf-parse" };
+            const quality = assessContentQuality(cleanText);
+            console.log(`✅ PDF text extraction successful with pdf-parse, length: ${cleanText.length}, quality score: ${quality.score}`);
+            return { text: cleanText, method: "pdf-parse", quality };
           }
         }
       } catch (pdfError) {
@@ -141,24 +66,21 @@ async function extractTextFromFile(
 
         const cleanText = cleanTextContent(fullText);
         if (validateExtractedContent(cleanText)) {
-          console.log(
-            `✅ PDF text extraction successful with pdfjs, length: ${cleanText.length}`
-          );
-          return { text: cleanText, method: "pdfjs" };
+          const quality = assessContentQuality(cleanText);
+          console.log(`✅ PDF text extraction successful with pdfjs, length: ${cleanText.length}, quality score: ${quality.score}`);
+          return { text: cleanText, method: "pdfjs", quality };
         }
       } catch (pdfjsError) {
         console.error("PDF.js parsing failed:", pdfjsError);
         return { text: "", method: "none", error: pdfjsError.message };
       }
-    } else if (
-      fileType === "text/plain" ||
-      fileName.toLowerCase().endsWith(".txt")
-    ) {
+    } else if (fileType === "text/plain" || fileName.toLowerCase().endsWith(".txt")) {
       console.log("📝 Processing text file...");
       const text = buffer.toString("utf-8");
       const cleanText = cleanTextContent(text);
       if (validateExtractedContent(cleanText)) {
-        return { text: cleanText, method: "text" };
+        const quality = assessContentQuality(cleanText);
+        return { text: cleanText, method: "text", quality };
       }
     }
 
@@ -190,26 +112,30 @@ export async function POST(request: NextRequest) {
 
     if (!file) {
       console.error("❌ No file uploaded");
-      return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+      return NextResponse.json({ 
+        error: "No file uploaded",
+        userMessage: "Please select a file to upload."
+      }, { status: 400 });
     }
 
     if (!email) {
       console.error("❌ No email provided");
-      return NextResponse.json({ error: "Email is required" }, { status: 400 });
+      return NextResponse.json({ 
+        error: "Email is required",
+        userMessage: "Email is required for document processing."
+      }, { status: 400 });
     }
 
     // Use improved file type detection
     const detectedType = detectFileType(file.name, file.type);
-    console.log(
-      `🔍 File type detection: original=${file.type}, detected=${detectedType}`
-    );
+    console.log(`🔍 File type detection: original=${file.type}, detected=${detectedType}`);
 
     if (!ACCEPTED_TYPES.includes(detectedType)) {
       console.error("❌ Unsupported file type:", detectedType);
       return NextResponse.json(
         {
-          error:
-            "Unsupported file type. Please upload PDF, DOCX, TXT, or image files.",
+          error: "Unsupported file type",
+          userMessage: "Please upload PDF, DOCX, TXT, or image files.",
         },
         { status: 400 }
       );
@@ -226,7 +152,10 @@ export async function POST(request: NextRequest) {
     if (buffer.length > MAX_FILE_SIZE) {
       console.error("❌ File too large:", buffer.length, ">", MAX_FILE_SIZE);
       return NextResponse.json(
-        { error: "File is too large. Maximum allowed size is 15MB." },
+        { 
+          error: "File too large",
+          userMessage: "File is too large. Maximum allowed size is 15MB."
+        },
         { status: 400 }
       );
     }
@@ -239,9 +168,7 @@ export async function POST(request: NextRequest) {
 
     // Generate unique file name
     const ext = extname(file.name) || "";
-    const fileName = `${Date.now()}_${Math.random()
-      .toString(36)
-      .slice(2, 8)}${ext}`;
+    const fileName = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}${ext}`;
     const filePath = join(uploadDir, fileName);
     console.log("📝 Writing file:", filePath);
 
@@ -251,22 +178,14 @@ export async function POST(request: NextRequest) {
 
     // Extract text from the file using enhanced function
     console.log("🔍 Extracting text from file...");
-    const extractionResult = await extractTextFromFile(
-      buffer,
-      detectedType,
-      file.name
-    );
+    const extractionResult = await extractTextFromFile(buffer, detectedType, file.name);
 
     const extractedText = extractionResult.text;
     const extractionMethod = extractionResult.method;
     const extractionError = extractionResult.error;
+    const contentQuality = extractionResult.quality;
 
-    console.log(
-      "✅ Text extraction completed, method:",
-      extractionMethod,
-      "length:",
-      extractedText.length
-    );
+    console.log("✅ Text extraction completed, method:", extractionMethod, "length:", extractedText.length);
 
     if (extractionError) {
       console.warn("⚠️ Text extraction had issues:", extractionError);
@@ -278,17 +197,11 @@ export async function POST(request: NextRequest) {
     let analysisError = null;
 
     // Check if text extraction actually succeeded and content is valid
-    const isTextExtractionSuccessful =
-      extractedText &&
-      extractedText.trim().length > 0 &&
-      validateExtractedContent(extractedText);
+    const isTextExtractionSuccessful = extractedText && extractedText.trim().length > 0 && validateExtractedContent(extractedText);
 
     if (isTextExtractionSuccessful) {
-      console.log("🔍 Analyzing document...");
-      console.log(
-        "📄 Content preview:",
-        extractedText.substring(0, 200) + "..."
-      );
+      console.log(" Analyzing document...");
+      console.log(" Content preview:", extractedText.substring(0, 200) + "...");
 
       // Check if Gemini API key is available
       if (!process.env.GOOGLE_GEMINI_API_KEY) {
@@ -308,8 +221,7 @@ export async function POST(request: NextRequest) {
           chapter: fileNameWithoutExt,
           level: "general",
           document_name: file.name,
-          description:
-            "Document uploaded successfully. AI analysis requires API key configuration.",
+          description: "Document uploaded successfully. AI analysis requires API key configuration.",
           auto_generated: ["subject", "chapter", "level"],
           date_created: new Date().toISOString(),
         };
@@ -317,12 +229,7 @@ export async function POST(request: NextRequest) {
         try {
           // Perform document analysis with timeout
           console.log("📊 Performing document analysis...");
-          const analysisPromise = GeminiService.analyzeDocument(
-            extractedText,
-            file.name
-          );
-
-          // Add timeout to prevent hanging
+          const analysisPromise = GeminiService.analyzeDocument(extractedText, file.name);
           const timeoutPromise = new Promise((_, reject) =>
             setTimeout(() => reject(new Error("Analysis timeout")), 30000)
           );
@@ -331,27 +238,18 @@ export async function POST(request: NextRequest) {
           console.log("✅ Document analysis successful:", analysis?.subject);
 
           // Generate content description with timeout
-          console.log("📝 Generating content description...");
-          const descriptionPromise = GeminiService.generateContentDescription(
-            extractedText,
-            {
-              subject: analysis.subject,
-              level: analysis.level,
-              chapterInfo: analysis.chapterSection,
-            }
-          );
+          console.log(" Generating content description...");
+          const descriptionPromise = GeminiService.generateContentDescription(extractedText, {
+            subject: analysis.subject,
+            level: analysis.level,
+            chapterInfo: analysis.chapterSection,
+          });
 
           const descriptionTimeoutPromise = new Promise((_, reject) =>
-            setTimeout(
-              () => reject(new Error("Description generation timeout")),
-              30000
-            )
+            setTimeout(() => reject(new Error("Description generation timeout")), 30000)
           );
 
-          description = await Promise.race([
-            descriptionPromise,
-            descriptionTimeoutPromise,
-          ]);
+          description = await Promise.race([descriptionPromise, descriptionTimeoutPromise]);
           console.log("✅ Content description generated");
         } catch (error) {
           console.error("❌ Document analysis failed:", error);
@@ -373,8 +271,7 @@ export async function POST(request: NextRequest) {
             chapter: fileNameWithoutExt,
             level: "general",
             document_name: file.name,
-            description:
-              "Document uploaded successfully. Content analysis will be available once processing is complete.",
+            description: "Document uploaded successfully. Content analysis will be available once processing is complete.",
             auto_generated: ["subject", "chapter", "level"],
             date_created: new Date().toISOString(),
           };
@@ -398,8 +295,7 @@ export async function POST(request: NextRequest) {
         chapter: fileNameWithoutExt,
         level: "general",
         document_name: file.name,
-        description:
-          "Document uploaded successfully. Content analysis will be available once processing is complete.",
+        description: "Document uploaded successfully. Content analysis will be available once processing is complete.",
         auto_generated: ["subject", "chapter", "level"],
         date_created: new Date().toISOString(),
       };
@@ -407,11 +303,8 @@ export async function POST(request: NextRequest) {
 
     console.log("✅ Upload completed successfully");
     console.log("📄 Final content length:", extractedText.length);
-    console.log("📄 Content preview:", extractedText.substring(0, 100) + "...");
-    console.log(
-      "📄 Text extraction status:",
-      isTextExtractionSuccessful ? "success" : "failed"
-    );
+    console.log(" Content preview:", extractedText.substring(0, 100) + "...");
+    console.log("📄 Text extraction status:", isTextExtractionSuccessful ? "success" : "failed");
 
     return NextResponse.json({
       success: true,
@@ -421,6 +314,7 @@ export async function POST(request: NextRequest) {
       description,
       textExtractionStatus: isTextExtractionSuccessful ? "success" : "failed",
       analysisStatus: analysisError ? "failed" : "success",
+      contentQuality,
       errors: {
         textExtraction: extractionError || null,
         analysis: analysisError ? analysisError.message : null,
@@ -434,6 +328,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error: "Failed to upload file",
+        userMessage: "An error occurred while uploading your file. Please try again.",
         details: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
