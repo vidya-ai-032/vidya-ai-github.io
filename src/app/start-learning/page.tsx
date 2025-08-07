@@ -55,6 +55,7 @@ function StartLearningPageContent() {
   const [activeTab, setActiveTab] = useState("document");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [contentLoading, setContentLoading] = useState(false);
 
   // Summary States
   const [summary, setSummary] = useState<any>(null);
@@ -116,25 +117,64 @@ function StartLearningPageContent() {
     // Try to get content from URL parameters first
     if (docContentParam) {
       setDocContent(decodeURIComponent(docContentParam));
+      console.log("✅ Content loaded from URL parameter");
     } else if (docNameParam) {
       // Try to get content from localStorage using the specific key
       try {
         const storedContent = localStorage.getItem(
           `vidyaai_doc_content_${docNameParam}`
         );
+        console.log(
+          "🔍 Looking for content with key:",
+          `vidyaai_doc_content_${docNameParam}`
+        );
+        console.log("📄 Stored content found:", !!storedContent);
+
         if (storedContent && storedContent.trim()) {
           setDocContent(storedContent);
+          console.log("✅ Content loaded from localStorage specific key");
         } else {
           // Fallback to library data
           const libraryData = localStorage.getItem(
             `vidyaai_library_${session?.user?.email}`
           );
+          console.log(
+            "🔍 Looking for library data with key:",
+            `vidyaai_library_${session?.user?.email}`
+          );
+          console.log("📚 Library data found:", !!libraryData);
+
           if (libraryData) {
             const library = JSON.parse(libraryData);
             const doc = library.find((d: any) => d.name === docNameParam);
+            console.log("📄 Document found in library:", !!doc);
+            console.log(
+              "📄 Document has rawContent:",
+              !!(doc && doc.rawContent)
+            );
+            console.log("📄 Document has content:", !!(doc && doc.content));
+
             if (doc && doc.rawContent && doc.rawContent.trim()) {
               setDocContent(doc.rawContent);
+              // Also store it in the specific key for future access
+              localStorage.setItem(
+                `vidyaai_doc_content_${docNameParam}`,
+                doc.rawContent
+              );
+              console.log("✅ Content loaded from library rawContent");
+            } else if (doc && doc.content && doc.content.trim()) {
+              setDocContent(doc.content);
+              // Also store it in the specific key for future access
+              localStorage.setItem(
+                `vidyaai_doc_content_${docNameParam}`,
+                doc.content
+              );
+              console.log("✅ Content loaded from library content");
+            } else {
+              console.log("❌ No content found in document");
             }
+          } else {
+            console.log("❌ No library data found");
           }
         }
       } catch (error) {
@@ -169,6 +209,225 @@ function StartLearningPageContent() {
       setProgressPercentage(Math.min(totalProgress, 100));
       return newSet;
     });
+  };
+
+  // Retry loading document content
+  const retryLoadContent = async () => {
+    if (!docName || !session?.user?.email) return;
+
+    setContentLoading(true);
+    setError(null);
+
+    try {
+      // Try to get content from library data
+      const libraryData = localStorage.getItem(
+        `vidyaai_library_${session.user.email}`
+      );
+
+      if (libraryData) {
+        const library = JSON.parse(libraryData);
+        const doc = library.find((d: any) => d.name === docName);
+
+        if (doc && doc.rawContent && doc.rawContent.trim()) {
+          setDocContent(doc.rawContent);
+          localStorage.setItem(
+            `vidyaai_doc_content_${docName}`,
+            doc.rawContent
+          );
+          console.log("✅ Content loaded from library rawContent");
+        } else if (doc && doc.content && doc.content.trim()) {
+          setDocContent(doc.content);
+          localStorage.setItem(`vidyaai_doc_content_${docName}`, doc.content);
+          console.log("✅ Content loaded from library content");
+        } else {
+          throw new Error("Document content not found in library");
+        }
+      } else {
+        throw new Error("Library data not found");
+      }
+    } catch (error) {
+      console.error("Error retrying content load:", error);
+      setError(
+        "Failed to load document content. Please try uploading the document again."
+      );
+    } finally {
+      setContentLoading(false);
+    }
+  };
+
+  // Reprocess document content
+  const reprocessDocument = async () => {
+    if (!docName || !session?.user?.email) return;
+
+    setContentLoading(true);
+    setError(null);
+
+    try {
+      console.log("🔄 Starting document reprocessing for:", docName);
+
+      // First, check if the API is accessible
+      console.log("🔍 Checking API health...");
+      try {
+        const healthResponse = await fetch("/api/health");
+        if (!healthResponse.ok) {
+          console.warn("⚠️ Health check failed, but continuing...");
+        } else {
+          console.log("✅ API health check passed");
+        }
+      } catch (healthError) {
+        console.warn("⚠️ Health check failed:", healthError);
+      }
+
+      // Get the document from library
+      const libraryData = localStorage.getItem(
+        `vidyaai_library_${session.user.email}`
+      );
+
+      if (!libraryData) {
+        throw new Error("Library data not found");
+      }
+
+      const library = JSON.parse(libraryData);
+      const doc = library.find((d: any) => d.name === docName);
+
+      if (!doc) {
+        throw new Error("Document not found in library");
+      }
+
+      console.log("📄 Found document in library:", doc.name);
+      console.log(
+        "📄 Document has rawContent:",
+        !!(doc.rawContent && doc.rawContent.trim())
+      );
+      console.log(
+        "📄 Document has content:",
+        !!(doc.content && doc.content.trim())
+      );
+
+      // Get the content to analyze
+      const contentToAnalyze = doc.rawContent || doc.content || "";
+
+      if (!contentToAnalyze.trim()) {
+        throw new Error("Document has no content to analyze");
+      }
+
+      console.log("📄 Content length to analyze:", contentToAnalyze.length);
+      console.log(
+        "📄 Content preview:",
+        contentToAnalyze.substring(0, 200) + "..."
+      );
+
+      // Try to re-analyze the document
+      console.log("🚀 Calling analyze-document API...");
+      const response = await fetch("/api/gemini/analyze-document", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: contentToAnalyze,
+          filename: doc.name,
+        }),
+      });
+
+      console.log("📡 API response status:", response.status);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("❌ API error response:", errorData);
+
+        // Provide more specific error messages
+        if (response.status === 401) {
+          throw new Error("Authentication failed. Please log in again.");
+        } else if (response.status === 500) {
+          throw new Error(
+            errorData.userMessage || "Server error. Please try again later."
+          );
+        } else {
+          throw new Error(
+            errorData.userMessage ||
+              errorData.error ||
+              `HTTP ${response.status}: Failed to reprocess document`
+          );
+        }
+      }
+
+      const result = await response.json();
+      console.log("✅ Analysis result received:", result);
+
+      if (!result.analysis) {
+        throw new Error("No analysis data received from API");
+      }
+
+      // Update the document in library
+      const updatedLibrary = library.map((d: any) => {
+        if (d.name === docName) {
+          return {
+            ...d,
+            analysis: result.analysis,
+            subject: result.analysis.subject,
+            chapter: result.analysis.chapterSection,
+          };
+        }
+        return d;
+      });
+
+      // Save updated library
+      localStorage.setItem(
+        `vidyaai_library_${session.user.email}`,
+        JSON.stringify(updatedLibrary)
+      );
+
+      // Update local state
+      setDocSubject(result.analysis.subject);
+      setDocChapter(result.analysis.chapterSection);
+
+      // If we have content, set it
+      if (doc.rawContent && doc.rawContent.trim()) {
+        setDocContent(doc.rawContent);
+        localStorage.setItem(`vidyaai_doc_content_${docName}`, doc.rawContent);
+      } else if (doc.content && doc.content.trim()) {
+        setDocContent(doc.content);
+        localStorage.setItem(`vidyaai_doc_content_${docName}`, doc.content);
+      }
+
+      console.log("✅ Document reprocessed successfully");
+    } catch (error) {
+      console.error("❌ Error reprocessing document:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
+
+      // Try to at least load the content even if analysis fails
+      try {
+        const libraryData = localStorage.getItem(
+          `vidyaai_library_${session.user.email}`
+        );
+        if (libraryData) {
+          const library = JSON.parse(libraryData);
+          const doc = library.find((d: any) => d.name === docName);
+
+          if (doc) {
+            const contentToLoad = doc.rawContent || doc.content || "";
+            if (contentToLoad.trim()) {
+              setDocContent(contentToLoad);
+              localStorage.setItem(
+                `vidyaai_doc_content_${docName}`,
+                contentToLoad
+              );
+              console.log("✅ Content loaded despite analysis failure");
+              setError(
+                `Analysis failed: ${errorMessage}. Content has been loaded for manual review.`
+              );
+              return;
+            }
+          }
+        }
+      } catch (fallbackError) {
+        console.error("❌ Fallback also failed:", fallbackError);
+      }
+
+      setError(`Failed to reprocess document: ${errorMessage}`);
+    } finally {
+      setContentLoading(false);
+    }
   };
 
   // Generate Summary
@@ -633,7 +892,11 @@ function StartLearningPageContent() {
                 <div className="prose max-w-none">
                   {docContent &&
                   docContent.trim() &&
-                  !docContent.includes("Text extraction failed") ? (
+                  !docContent.includes("Text extraction failed") &&
+                  !docContent.includes(
+                    "Word document parsing not implemented yet"
+                  ) &&
+                  !docContent.includes("Image OCR not implemented yet") ? (
                     <pre className="whitespace-pre-wrap text-sm text-gray-700 font-sans">
                       {docContent}
                     </pre>
@@ -658,6 +921,33 @@ function StartLearningPageContent() {
                         The document has been uploaded successfully. Content
                         will be available once processing is complete.
                       </p>
+
+                      {/* Action buttons */}
+                      <div className="mt-4 space-x-3">
+                        <button
+                          onClick={retryLoadContent}
+                          disabled={contentLoading}
+                          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm"
+                        >
+                          {contentLoading ? "Loading..." : "Retry Load Content"}
+                        </button>
+                        <button
+                          onClick={reprocessDocument}
+                          disabled={contentLoading}
+                          className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm"
+                        >
+                          {contentLoading
+                            ? "Processing..."
+                            : "Reprocess Document"}
+                        </button>
+                      </div>
+
+                      {/* Error message */}
+                      {error && (
+                        <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                          <p className="text-red-600 text-sm">{error}</p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

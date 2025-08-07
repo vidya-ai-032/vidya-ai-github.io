@@ -43,22 +43,44 @@ export async function POST(request: NextRequest) {
     let pdfjsError = null;
     try {
       const pdfjsLib = await import("pdfjs-dist");
+
+      // Configure PDF.js worker with improved setup
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://esm.sh/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.mjs`;
+
       const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
       let fullText = "";
 
+      console.log(`📄 PDF has ${pdf.numPages} pages`);
+
       for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const textContent = await page.getTextContent();
-        const pageText = textContent.items
-          .map((item: any) => item.str)
-          .join(" ");
-        fullText += pageText + "\n";
+        try {
+          const page = await pdf.getPage(i);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items
+            .map((item: any) => item.str || "")
+            .join(" ");
+          fullText += pageText + "\n";
+
+          console.log(`📄 Page ${i} extracted: ${pageText.length} characters`);
+        } catch (pageError) {
+          console.error(`❌ Error extracting page ${i}:`, pageError);
+          // Continue with other pages
+        }
       }
 
+      // Clean the extracted text
+      const cleanText = fullText
+        .trim()
+        .replace(/\s+/g, " ")
+        .replace(/\n\s*\n/g, "\n")
+        .replace(/[^\w\s\.\,\;\:\!\?\-\(\)\[\]\{\}]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
       pdfjsResult = {
-        textLength: fullText.length,
+        textLength: cleanText.length,
         numPages: pdf.numPages,
-        textPreview: fullText.substring(0, 200) || "No text",
+        textPreview: cleanText.substring(0, 200) || "No text",
       };
       console.log("✅ pdfjs-dist successful:", pdfjsResult);
     } catch (error) {

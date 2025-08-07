@@ -30,18 +30,42 @@ export async function POST(req: NextRequest) {
     try {
       const fileBuffer = await fs.readFile(filePath);
       // Use dynamic import for pdfjs-dist (avoid Next.js SSR issues)
-      const pdfjsLib = await import("pdfjs-dist/build/pdf.mjs");
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.js`;
+      const pdfjsLib = await import("pdfjs-dist");
+
+      // Configure PDF.js worker with improved setup
+      pdfjsLib.GlobalWorkerOptions.workerSrc = `https://esm.sh/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.mjs`;
+
       const pdf = await pdfjsLib.getDocument({ data: fileBuffer }).promise;
       let pdfText = "";
+
+      console.log(`📄 PDF has ${pdf.numPages} pages`);
+
       for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        pdfText +=
-          content.items.map((item: { str: string }) => item.str).join(" ") +
-          "\n";
+        try {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          const pageText = content.items
+            .map((item: { str: string }) => item.str || "")
+            .join(" ");
+          pdfText += pageText + "\n";
+
+          console.log(`📄 Page ${i} extracted: ${pageText.length} characters`);
+        } catch (pageError) {
+          console.error(`❌ Error extracting page ${i}:`, pageError);
+          // Continue with other pages
+        }
       }
-      text = pdfText;
+
+      // Clean the extracted text
+      text = pdfText
+        .trim()
+        .replace(/\s+/g, " ")
+        .replace(/\n\s*\n/g, "\n")
+        .replace(/[^\w\s\.\,\;\:\!\?\-\(\)\[\]\{\}]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      console.log(`✅ PDF text extraction completed, length: ${text.length}`);
     } catch (_err: unknown) {
       return NextResponse.json(
         { error: "Failed to extract PDF text." },

@@ -13,6 +13,32 @@ const ACCEPTED_TYPES = [
 
 const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB
 
+// Helper function to detect file type more robustly
+function detectFileType(fileName: string, mimeType: string): string {
+  const extension = fileName.toLowerCase().split(".").pop() || "";
+
+  // Map common extensions to MIME types
+  const extensionToMimeType: { [key: string]: string } = {
+    pdf: "application/pdf",
+    txt: "text/plain",
+    md: "text/plain",
+    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    doc: "application/msword",
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    gif: "image/gif",
+    bmp: "image/bmp",
+  };
+
+  // Use MIME type if available, otherwise fall back to extension
+  if (mimeType && mimeType !== "application/octet-stream") {
+    return mimeType;
+  }
+
+  return extensionToMimeType[extension] || mimeType;
+}
+
 // Helper function to validate extracted content
 function validateExtractedContent(content: string): boolean {
   if (!content || content.trim().length === 0) {
@@ -33,6 +59,19 @@ function validateExtractedContent(content: string): boolean {
   return true;
 }
 
+// Helper function to clean and normalize text content
+function cleanTextContent(text: string): string {
+  if (!text) return "";
+
+  return text
+    .trim()
+    .replace(/\s+/g, " ") // Replace multiple whitespace with single space
+    .replace(/\n\s*\n/g, "\n") // Remove empty lines
+    .replace(/[^\w\s\.\,\;\:\!\?\-\(\)\[\]\{\}]/g, " ") // Keep only readable characters
+    .replace(/\s+/g, " ") // Clean up any remaining multiple spaces
+    .trim();
+}
+
 // Helper function to extract text from different file types
 async function extractTextFromFile(
   buffer: Buffer,
@@ -40,76 +79,109 @@ async function extractTextFromFile(
   fileName: string
 ): Promise<string> {
   try {
-    if (fileType === "application/pdf") {
-      // Use pdf-parse with proper error handling
+    console.log(`🔍 Starting text extraction for: ${fileName} (${fileType})`);
+
+    if (
+      fileType === "application/pdf" ||
+      fileName.toLowerCase().endsWith(".pdf")
+    ) {
+      console.log("📄 Processing PDF file...");
+
+      // Method 1: Try pdf-parse first (faster for simple PDFs)
       try {
         const pdfParse = (await import("pdf-parse")).default;
         const data = await pdfParse(buffer);
 
-        // Check if we got meaningful text content
         if (data && data.text && data.text.trim().length > 0) {
-          const cleanText = data.text.trim().replace(/\s+/g, " ");
+          const cleanText = cleanTextContent(data.text);
           console.log(
-            "✅ PDF text extraction successful, length:",
-            cleanText.length
+            `✅ PDF text extraction successful with pdf-parse, length: ${cleanText.length}`
           );
           return cleanText;
         } else {
-          console.log("⚠️ PDF parsed but no text content found");
-          return "";
+          console.log("⚠️ PDF parsed with pdf-parse but no text content found");
         }
       } catch (pdfError) {
-        console.error("PDF parsing error:", pdfError);
+        console.error("PDF parsing error with pdf-parse:", pdfError);
+      }
 
-        // Try alternative PDF parsing method
-        try {
-          const pdfjsLib = await import("pdfjs-dist");
-          const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
-          let fullText = "";
+      // Method 2: Try pdfjs-dist as fallback (better for complex PDFs)
+      try {
+        const pdfjsLib = await import("pdfjs-dist");
 
-          for (let i = 1; i <= pdf.numPages; i++) {
+        // Configure PDF.js worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://esm.sh/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.mjs`;
+
+        const pdf = await pdfjsLib.getDocument({ data: buffer }).promise;
+        let fullText = "";
+
+        console.log(`📄 PDF has ${pdf.numPages} pages`);
+
+        for (let i = 1; i <= pdf.numPages; i++) {
+          try {
             const page = await pdf.getPage(i);
             const textContent = await page.getTextContent();
-            const pageText = textContent.items
-              .map((item: any) => item.str)
-              .join(" ");
-            fullText += pageText + "\n";
-          }
 
-          const cleanText = fullText.trim().replace(/\s+/g, " ");
-          if (cleanText.length > 0) {
+            const pageText = textContent.items
+              .map((item: any) => item.str || "")
+              .join(" ");
+
+            fullText += pageText + "\n";
+
             console.log(
-              "✅ PDF text extraction successful with pdfjs, length:",
-              cleanText.length
+              `📄 Page ${i} extracted: ${pageText.length} characters`
             );
-            return cleanText;
-          } else {
-            console.log("⚠️ PDF parsed with pdfjs but no text content found");
-            return "";
+          } catch (pageError) {
+            console.error(`❌ Error extracting page ${i}:`, pageError);
+            // Continue with other pages
           }
-        } catch (pdfjsError) {
-          console.error("PDF.js parsing also failed:", pdfjsError);
+        }
+
+        const cleanText = cleanTextContent(fullText);
+        if (cleanText.length > 0) {
+          console.log(
+            `✅ PDF text extraction successful with pdfjs, length: ${cleanText.length}`
+          );
+          return cleanText;
+        } else {
+          console.log("⚠️ PDF parsed with pdfjs but no text content found");
           return "";
         }
+      } catch (pdfjsError) {
+        console.error("PDF.js parsing failed:", pdfjsError);
+        return "";
       }
-    } else if (fileType === "text/plain") {
+    } else if (
+      fileType === "text/plain" ||
+      fileName.toLowerCase().endsWith(".txt")
+    ) {
+      console.log("📝 Processing text file...");
       const text = buffer.toString("utf-8");
-      const cleanText = text.trim().replace(/\s+/g, " ");
+      const cleanText = cleanTextContent(text);
       console.log(
-        "✅ Text file extraction successful, length:",
-        cleanText.length
+        `✅ Text file extraction successful, length: ${cleanText.length}`
       );
       return cleanText;
-    } else if (fileType.includes("wordprocessingml.document")) {
+    } else if (
+      fileType.includes("wordprocessingml.document") ||
+      fileName.toLowerCase().endsWith(".docx")
+    ) {
+      console.log("📄 Processing Word document...");
       // For Word documents, we'll need to implement DOCX parsing
       console.log("⚠️ Word document parsing not implemented yet");
       return "";
-    } else if (fileType.startsWith("image/")) {
+    } else if (
+      fileType.startsWith("image/") ||
+      /\.(jpg|jpeg|png|gif|bmp)$/i.test(fileName)
+    ) {
+      console.log("🖼️ Processing image file...");
       // For images, we'll need OCR implementation
       console.log("⚠️ Image OCR not implemented yet");
       return "";
+    } else {
+      console.log(`⚠️ Unsupported file type: ${fileType}`);
+      return "";
     }
-    return "";
   } catch (error) {
     console.error("Error extracting text from file:", error);
     // Don't throw error, just return empty string to allow upload to continue
@@ -138,15 +210,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
-    if (!ACCEPTED_TYPES.includes(file.type)) {
-      console.error("❌ Unsupported file type:", file.type);
+    // Use improved file type detection
+    const detectedType = detectFileType(file.name, file.type);
+    console.log(
+      `🔍 File type detection: original=${file.type}, detected=${detectedType}`
+    );
+
+    if (!ACCEPTED_TYPES.includes(detectedType)) {
+      console.error("❌ Unsupported file type:", detectedType);
       return NextResponse.json(
-        { error: "Unsupported file type" },
+        {
+          error:
+            "Unsupported file type. Please upload PDF, DOCX, TXT, or image files.",
+        },
         { status: 400 }
       );
     }
 
-    console.log("✅ File type accepted:", file.type);
+    console.log("✅ File type accepted:", detectedType);
 
     // Read file buffer
     console.log("📖 Reading file buffer...");
@@ -186,7 +267,11 @@ export async function POST(request: NextRequest) {
     let textExtractionError = null;
 
     try {
-      extractedText = await extractTextFromFile(buffer, file.type, file.name);
+      extractedText = await extractTextFromFile(
+        buffer,
+        detectedType,
+        file.name
+      );
       console.log(
         "✅ Text extraction successful, length:",
         extractedText.length
@@ -334,6 +419,13 @@ export async function POST(request: NextRequest) {
     }
 
     console.log("✅ Upload completed successfully");
+    console.log("📄 Final content length:", extractedText.length);
+    console.log("📄 Content preview:", extractedText.substring(0, 100) + "...");
+    console.log(
+      "📄 Text extraction status:",
+      isTextExtractionSuccessful ? "success" : "failed"
+    );
+
     return NextResponse.json({
       success: true,
       fileName,

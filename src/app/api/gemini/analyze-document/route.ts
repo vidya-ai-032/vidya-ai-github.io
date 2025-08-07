@@ -31,6 +31,32 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!content.trim()) {
+      console.error("❌ Content is empty or only whitespace");
+      return NextResponse.json(
+        {
+          error: "Content is empty",
+          userMessage:
+            "The document content is empty. Please upload a document with readable content.",
+          details: null,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Check if Gemini API key is available
+    if (!process.env.GOOGLE_GEMINI_API_KEY) {
+      console.error("❌ Gemini API key not configured");
+      return NextResponse.json(
+        {
+          error: "Gemini API not configured",
+          userMessage: "AI analysis is not available. Please contact support.",
+          details: "GOOGLE_GEMINI_API_KEY environment variable is missing",
+        },
+        { status: 500 }
+      );
+    }
+
     console.log("🚀 Calling GeminiService.analyzeDocument...");
     const analysis = await GeminiService.analyzeDocument(content, filename);
     console.log("✅ Document analysis completed successfully");
@@ -38,9 +64,42 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ analysis });
   } catch (error) {
     console.error("💥 Error in analyze-document API:", error);
-    
+
     const errorMessage = error instanceof Error ? error.message : String(error);
-    
+
+    // Provide more specific error messages
+    if (errorMessage.includes("API key")) {
+      return NextResponse.json(
+        {
+          error: "Gemini API key error",
+          userMessage:
+            "AI analysis is not available due to configuration issues. Please contact support.",
+          details: errorMessage,
+        },
+        { status: 500 }
+      );
+    } else if (errorMessage.includes("quota")) {
+      return NextResponse.json(
+        {
+          error: "Gemini API quota exceeded",
+          userMessage:
+            "AI analysis quota has been exceeded. Please try again later.",
+          details: errorMessage,
+        },
+        { status: 429 }
+      );
+    } else if (errorMessage.includes("timeout")) {
+      return NextResponse.json(
+        {
+          error: "Analysis timeout",
+          userMessage:
+            "Analysis took too long. Please try again with a shorter document.",
+          details: errorMessage,
+        },
+        { status: 408 }
+      );
+    }
+
     return NextResponse.json(
       {
         error: "Failed to analyze document",
