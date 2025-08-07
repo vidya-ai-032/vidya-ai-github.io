@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import {
@@ -42,7 +42,7 @@ interface SubjectiveQA {
   score: number;
 }
 
-export default function StartLearningPage() {
+function StartLearningPageContent() {
   const { data: session, status } = useSession();
   const searchParams = useSearchParams();
   const [docName, setDocName] = useState("");
@@ -1171,5 +1171,13 @@ export default function StartLearningPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function StartLearningPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+      <StartLearningPageContent />
+    </Suspense>
   );
 }
