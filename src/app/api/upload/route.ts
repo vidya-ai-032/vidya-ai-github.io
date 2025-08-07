@@ -39,20 +39,33 @@ function detectFileType(fileName: string, mimeType: string): string {
   return extensionToMimeType[extension] || mimeType;
 }
 
-// Helper function to validate extracted content
+// Enhanced validation function
 function validateExtractedContent(content: string): boolean {
   if (!content || content.trim().length === 0) {
     return false;
   }
 
   // Check if content is too short (likely not meaningful)
-  if (content.trim().length < 10) {
+  if (content.trim().length < 20) {
     return false;
   }
 
   // Check if content contains mostly special characters or numbers
   const textOnly = content.replace(/[^a-zA-Z\s]/g, "");
-  if (textOnly.trim().length < content.length * 0.3) {
+  if (textOnly.trim().length < content.length * 0.2) {
+    return false;
+  }
+
+  // Check for common error messages
+  const errorPatterns = [
+    "text extraction failed",
+    "word document parsing not implemented",
+    "image ocr not implemented",
+    "unsupported file type",
+  ];
+
+  const lowerContent = content.toLowerCase();
+  if (errorPatterns.some((pattern) => lowerContent.includes(pattern))) {
     return false;
   }
 
@@ -72,7 +85,7 @@ function cleanTextContent(text: string): string {
     .trim();
 }
 
-// Helper function to extract text from different file types
+// Enhanced text extraction function
 async function extractTextFromFile(
   buffer: Buffer,
   fileType: string,
@@ -164,39 +177,6 @@ async function extractTextFromFile(
   }
 }
 
-// Enhanced validation function
-function validateExtractedContent(content: string): boolean {
-  if (!content || content.trim().length === 0) {
-    return false;
-  }
-
-  // Check if content is too short (likely not meaningful)
-  if (content.trim().length < 20) {
-    return false;
-  }
-
-  // Check if content contains mostly special characters or numbers
-  const textOnly = content.replace(/[^a-zA-Z\s]/g, "");
-  if (textOnly.trim().length < content.length * 0.2) {
-    return false;
-  }
-
-  // Check for common error messages
-  const errorPatterns = [
-    "text extraction failed",
-    "word document parsing not implemented",
-    "image ocr not implemented",
-    "unsupported file type",
-  ];
-
-  const lowerContent = content.toLowerCase();
-  if (errorPatterns.some((pattern) => lowerContent.includes(pattern))) {
-    return false;
-  }
-
-  return true;
-}
-
 export async function POST(request: NextRequest) {
   console.log("🔍 Upload API called");
 
@@ -269,29 +249,27 @@ export async function POST(request: NextRequest) {
     writeFileSync(filePath, buffer);
     console.log("✅ File written successfully");
 
-    // Extract text from the file
+    // Extract text from the file using enhanced function
     console.log("🔍 Extracting text from file...");
-    let extractedText = "";
-    let textExtractionError = null;
+    const extractionResult = await extractTextFromFile(
+      buffer,
+      detectedType,
+      file.name
+    );
 
-    try {
-      const { text, method, error } = await extractTextFromFile(
-        buffer,
-        detectedType,
-        file.name
-      );
-      extractedText = text;
-      if (error) {
-        textExtractionError = error;
-      }
-      console.log(
-        "✅ Text extraction successful, length:",
-        extractedText.length
-      );
-    } catch (error) {
-      console.error("❌ Text extraction failed:", error);
-      textExtractionError = error;
-      // Continue with upload even if text extraction fails
+    const extractedText = extractionResult.text;
+    const extractionMethod = extractionResult.method;
+    const extractionError = extractionResult.error;
+
+    console.log(
+      "✅ Text extraction completed, method:",
+      extractionMethod,
+      "length:",
+      extractedText.length
+    );
+
+    if (extractionError) {
+      console.warn("⚠️ Text extraction had issues:", extractionError);
     }
 
     // Analyze the document if text was extracted
@@ -303,9 +281,6 @@ export async function POST(request: NextRequest) {
     const isTextExtractionSuccessful =
       extractedText &&
       extractedText.trim().length > 0 &&
-      !extractedText.includes("Text extraction failed") &&
-      !extractedText.includes("Word document content") &&
-      !extractedText.includes("Image content") &&
       validateExtractedContent(extractedText);
 
     if (isTextExtractionSuccessful) {
@@ -383,7 +358,7 @@ export async function POST(request: NextRequest) {
           analysisError = error;
 
           // Provide fallback analysis data
-          const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, ""); // Remove file extension
+          const fileNameWithoutExt = file.name.replace(/\.[^/.]+$/, "");
           analysis = {
             topic: fileNameWithoutExt,
             subject: "General",
@@ -447,9 +422,7 @@ export async function POST(request: NextRequest) {
       textExtractionStatus: isTextExtractionSuccessful ? "success" : "failed",
       analysisStatus: analysisError ? "failed" : "success",
       errors: {
-        textExtraction: textExtractionError
-          ? textExtractionError.message
-          : null,
+        textExtraction: extractionError || null,
         analysis: analysisError ? analysisError.message : null,
       },
       message: isTextExtractionSuccessful
