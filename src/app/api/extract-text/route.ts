@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { IncomingForm, File, Fields, Files } from "formidable";
 import fs from "fs";
-import { validateExtractedContent, cleanTextContent } from "@/lib/textUtils";
+import {
+  validateExtractedContent,
+  cleanTextContent,
+} from "../../../lib/textUtils";
 
 export async function POST(request: NextRequest) {
   console.log("🔍 Extract Text API called");
@@ -54,7 +57,7 @@ export async function POST(request: NextRequest) {
 
           try {
             console.log(
-              "�� Processing file:",
+              "📄 Processing file:",
               file.originalFilename,
               file.mimetype
             );
@@ -220,7 +223,9 @@ async function extractTextFromFile(
           success: false,
           text: "",
           method: "none",
-          error: `PDF parsing failed: ${pdfjsError.message}`,
+          error: `PDF parsing failed: ${
+            pdfjsError instanceof Error ? pdfjsError.message : "Unknown error"
+          }`,
         };
       }
 

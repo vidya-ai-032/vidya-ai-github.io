@@ -1,6 +1,3 @@
-
-
-
 // Enhanced validation function
 export function validateExtractedContent(content: string): boolean {
   if (!content || content.trim().length === 0) {
@@ -44,7 +41,10 @@ export function cleanTextContent(text: string): string {
     .trim()
     .replace(/\s+/g, " ") // Replace multiple whitespace with single space
     .replace(/\n\s*\n/g, "\n") // Remove empty lines
-    .replace(/[^\w\s\.\,\;\:\!\?\-\(\)\[\]\{\}\-\+\=\*\/\@\#\$\%\&\*\(\)]/g, " ") // Keep more readable characters
+    .replace(
+      /[^\w\s\.\,\;\:\!\?\-\(\)\[\]\{\}\-\+\=\*\/\@\#\$\%\&\*\(\)]/g,
+      " "
+    ) // Keep more readable characters
     .replace(/\s+/g, " ") // Clean up any remaining multiple spaces
     .trim();
 }
@@ -84,7 +84,11 @@ export function assessContentQuality(content: string): {
   let score = 100;
 
   if (!content || content.trim().length === 0) {
-    return { score: 0, issues: ["No content found"], suggestions: ["Upload a file with readable text"] };
+    return {
+      score: 0,
+      issues: ["No content found"],
+      suggestions: ["Upload a file with readable text"],
+    };
   }
 
   // Check content length
@@ -95,13 +99,15 @@ export function assessContentQuality(content: string): {
   } else if (content.trim().length < 200) {
     score -= 15;
     issues.push("Content is short");
-    suggestions.push("Consider uploading a longer document for better analysis");
+    suggestions.push(
+      "Consider uploading a longer document for better analysis"
+    );
   }
 
   // Check text quality
   const textOnly = content.replace(/[^a-zA-Z\s]/g, "");
   const textRatio = textOnly.trim().length / content.length;
-  
+
   if (textRatio < 0.3) {
     score -= 40;
     issues.push("Low text content ratio");
@@ -117,7 +123,9 @@ export function assessContentQuality(content: string): {
   if (lowerContent.includes("text extraction failed")) {
     score -= 50;
     issues.push("Text extraction failed");
-    suggestions.push("Try uploading a different file format or a simpler document");
+    suggestions.push(
+      "Try uploading a different file format or a simpler document"
+    );
   }
 
   if (lowerContent.includes("word document parsing not implemented")) {
@@ -135,6 +143,6 @@ export function assessContentQuality(content: string): {
   return {
     score: Math.max(0, score),
     issues,
-    suggestions
+    suggestions,
   };
 }

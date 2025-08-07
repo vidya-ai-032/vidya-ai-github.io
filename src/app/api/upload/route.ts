@@ -84,7 +84,14 @@ async function extractTextFromFile(
         }
       } catch (pdfjsError) {
         console.error("PDF.js parsing failed:", pdfjsError);
-        return { text: "", method: "none", error: pdfjsError.message };
+        return {
+          text: "",
+          method: "none",
+          error:
+            pdfjsError instanceof Error
+              ? pdfjsError.message
+              : "PDF parsing failed",
+        };
       }
     } else if (
       fileType === "text/plain" ||
@@ -226,9 +233,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Analyze the document if text was extracted
-    let analysis = null;
-    let description = null;
-    let analysisError = null;
+    let analysis: any = null;
+    let description: any = null;
+    let analysisError: any = null;
 
     // Check if text extraction actually succeeded and content is valid
     const isTextExtractionSuccessful =
@@ -238,7 +245,10 @@ export async function POST(request: NextRequest) {
 
     if (isTextExtractionSuccessful) {
       console.log(" Analyzing document...");
-      console.log(" Content preview:", extractedText.substring(0, 200) + "...");
+      console.log(
+        "📄 Content preview:",
+        extractedText.substring(0, 200) + "..."
+      );
 
       // Check if Gemini API key is available
       if (!process.env.GOOGLE_GEMINI_API_KEY) {
@@ -275,7 +285,10 @@ export async function POST(request: NextRequest) {
             setTimeout(() => reject(new Error("Analysis timeout")), 30000)
           );
 
-          analysis = await Promise.race([analysisPromise, timeoutPromise]);
+          analysis = (await Promise.race([
+            analysisPromise,
+            timeoutPromise,
+          ])) as any;
           console.log("✅ Document analysis successful:", analysis?.subject);
 
           // Generate content description with timeout
@@ -283,9 +296,9 @@ export async function POST(request: NextRequest) {
           const descriptionPromise = GeminiService.generateContentDescription(
             extractedText,
             {
-              subject: analysis.subject,
-              level: analysis.level,
-              chapterInfo: analysis.chapterSection,
+              subject: analysis?.subject || "General",
+              level: analysis?.level || "general",
+              chapterInfo: analysis?.chapterSection || "General",
             }
           );
 
@@ -296,10 +309,10 @@ export async function POST(request: NextRequest) {
             )
           );
 
-          description = await Promise.race([
+          description = (await Promise.race([
             descriptionPromise,
             descriptionTimeoutPromise,
-          ]);
+          ])) as any;
           console.log("✅ Content description generated");
         } catch (error) {
           console.error("❌ Document analysis failed:", error);
@@ -372,7 +385,7 @@ export async function POST(request: NextRequest) {
       contentQuality,
       errors: {
         textExtraction: extractionError || null,
-        analysis: analysisError ? analysisError.message : null,
+        analysis: analysisError instanceof Error ? analysisError.message : null,
       },
       message: isTextExtractionSuccessful
         ? "Document uploaded and analyzed successfully"
